@@ -231,3 +231,4 @@ uploads/
 keys.json
 secrets.json
 credentials.json
+.claude/settings.local.json
