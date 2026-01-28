@@ -1,7 +1,7 @@
 # Basar AI - Implementation Plan
 
 **Version**: 1.0.0
-**Date**: 2025-01-28
+**Date**: 2026-01-28
 **Status**: Approved
 **Constitution**: v1.0.0
 
@@ -45,12 +45,12 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Preset structure | Single `platform_preset` field | Simplifies schema; format is always PNG |
-| Platforms | Instagram, Facebook, Twitter/X, LinkedIn | Covers major social networks |
+| Platforms | Instagram, Facebook, Twitter/X, LinkedIn, TikTok, YouTube | Covers major social networks |
 | Logo usage | Per-generation choice | Flexibility: none / prompt / watermark / both |
 | Image URLs | Public (unguessable UUIDs) | Simpler for MVP; UUIDs provide practical privacy |
 | Brand kit | 6 questions | Minimal viable set for brand context |
 | Admin | Operator-only (email allowlist) | Users manage their brands; operator monitors system |
-| AI Models | OpenAI gpt-image-1 + Gemini Nano Banana Pro | Latest image generation models |
+| AI Models | OpenAI `gpt-image-1` + Gemini `gemini-3-pro-image-preview` | Latest image generation models |
 | Summary derivation | Template concatenation | Deterministic, fast, no extra API costs |
 | History actions | View + Delete only | MVP scope; no prompt reuse |
 
@@ -88,7 +88,9 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
                     ┌──────────────────────────┐
                     │    Provider APIs         │
                     │  - OpenAI (gpt-image-1)  │
-                    │  - Gemini (Nano Banana)  │
+                    │  - Gemini API            │
+                    │    (gemini-3-pro-image-  │
+                    │     preview)             │
                     └──────────────────────────┘
 ```
 
@@ -103,7 +105,7 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
 | Secrets | Supabase Vault |
 | Storage | Supabase Storage |
 | Hosting | Bunny Magic Containers |
-| Providers | OpenAI, Google Gemini |
+| Providers | OpenAI, Google Gemini API |
 
 ---
 
@@ -258,6 +260,13 @@ export const PLATFORM_PRESETS = {
   // LinkedIn
   linkedin_post: { width: 1200, height: 627, label: 'LinkedIn Post' },
   linkedin_banner: { width: 1584, height: 396, label: 'LinkedIn Banner' },
+
+  // TikTok
+  tiktok_video_cover: { width: 1080, height: 1920, label: 'TikTok Video Cover' },
+
+  // YouTube
+  youtube_thumbnail: { width: 1280, height: 720, label: 'YouTube Thumbnail' },
+  youtube_banner: { width: 2560, height: 1440, label: 'YouTube Banner' },
 } as const;
 
 export type PlatformPreset = keyof typeof PLATFORM_PRESETS;
@@ -271,7 +280,38 @@ export const PRESETS_BY_PLATFORM = {
   facebook: ['facebook_post', 'facebook_cover', 'facebook_story'],
   twitter: ['twitter_post', 'twitter_header'],
   linkedin: ['linkedin_post', 'linkedin_banner'],
+  tiktok: ['tiktok_video_cover'],
+  youtube: ['youtube_thumbnail', 'youtube_banner'],
 } as const;
+```
+
+### Aspect Ratio Mapping (for Gemini)
+
+Gemini API requires `aspect_ratio` instead of explicit width/height. Map presets to closest supported ratio:
+
+```typescript
+export const PRESET_TO_ASPECT_RATIO: Record<PlatformPreset, string> = {
+  // 1:1
+  instagram_post: '1:1',
+
+  // 9:16 (vertical)
+  instagram_story: '9:16',
+  instagram_reel_cover: '9:16',
+  facebook_story: '9:16',
+  tiktok_video_cover: '9:16',
+
+  // 16:9 (horizontal)
+  facebook_post: '16:9',
+  twitter_post: '16:9',
+  linkedin_post: '16:9',
+  youtube_thumbnail: '16:9',
+
+  // 3:1 (wide banners - use 16:9 and crop)
+  twitter_header: '16:9',
+  facebook_cover: '16:9',
+  linkedin_banner: '16:9',
+  youtube_banner: '16:9',
+};
 ```
 
 ---
@@ -382,7 +422,7 @@ Authorization: Bearer <supabase_access_token>
   "name": "My Brand",
   "logo_url": "https://...",
   "kit_status": "not_started",
-  "created_at": "2025-01-28T00:00:00Z"
+  "created_at": "2026-01-28T00:00:00Z"
 }
 ```
 
@@ -414,7 +454,7 @@ Authorization: Bearer <supabase_access_token>
   "answers": { ... },
   "summary": "Brand: My Brand\nTagline: Innovation for everyone\n...",
   "status": "complete",
-  "updated_at": "2025-01-28T00:00:00Z"
+  "updated_at": "2026-01-28T00:00:00Z"
 }
 ```
 
@@ -442,9 +482,9 @@ Authorization: Bearer <supabase_access_token>
   "id": "uuid",
   "provider": "openai",
   "label": "Production Key",
-  "last_validated_at": "2025-01-28T00:00:00Z",
+  "last_validated_at": "2026-01-28T00:00:00Z",
   "last_validation_error": null,
-  "created_at": "2025-01-28T00:00:00Z"
+  "created_at": "2026-01-28T00:00:00Z"
 }
 ```
 
@@ -452,7 +492,7 @@ Authorization: Bearer <supabase_access_token>
 ```json
 {
   "valid": true,
-  "validated_at": "2025-01-28T00:00:00Z",
+  "validated_at": "2026-01-28T00:00:00Z",
   "error": null
 }
 ```
@@ -489,7 +529,7 @@ Authorization: Bearer <supabase_access_token>
   "height": 1080,
   "logo_mode": "watermark",
   "image_url": "https://...",
-  "created_at": "2025-01-28T00:00:00Z"
+  "created_at": "2026-01-28T00:00:00Z"
 }
 ```
 
@@ -526,11 +566,12 @@ async def generate_image(
     3. Resolve dimensions from preset
     4. Fetch provider key from Vault
     5. Build full prompt (kit summary + user prompt + logo instruction)
-    6. Call provider API
-    7. Apply logo watermark (if requested)
-    8. Store PNG to Supabase Storage
-    9. Insert generation record
-    10. Return generation with public URL
+    6. Call provider API (with provider-specific handling)
+    7. Post-process image (resize/crop to exact preset dimensions)
+    8. Apply logo watermark (if requested)
+    9. Store PNG to Supabase Storage
+    10. Insert generation record
+    11. Return generation with public URL
     """
 
     # 1. Verify ownership
@@ -554,6 +595,8 @@ async def generate_image(
 
     # 4. Resolve preset dimensions
     preset = PLATFORM_PRESETS[request.platform_preset]
+    target_width = preset['width']
+    target_height = preset['height']
 
     # 5. Fetch key from Vault
     key = await get_provider_key(brand_id, request.provider)
@@ -567,30 +610,37 @@ async def generate_image(
         image_bytes = await openai_generate(
             api_key=api_key,
             prompt=full_prompt,
-            width=preset['width'],
-            height=preset['height'],
+            width=target_width,
+            height=target_height,
             model=request.model or 'gpt-image-1'
         )
     else:
+        # Gemini requires aspect_ratio and image_size, not width/height
+        aspect_ratio = PRESET_TO_ASPECT_RATIO[request.platform_preset]
         image_bytes = await gemini_generate(
             api_key=api_key,
             prompt=full_prompt,
-            width=preset['width'],
-            height=preset['height'],
+            aspect_ratio=aspect_ratio,
+            image_size='1K',  # Default for MVP; can be '2K' or '4K' later
             model=request.model or 'gemini-3-pro-image-preview'
         )
 
-    # 7. Apply watermark if requested
+    # 7. Post-process: resize/crop to exact preset dimensions
+    # Gemini returns fixed resolutions per aspect_ratio/size combo,
+    # so we must resize/crop to match the exact preset dimensions.
+    image_bytes = resize_to_preset(image_bytes, target_width, target_height)
+
+    # 8. Apply watermark if requested
     if request.logo_mode in ('watermark', 'both') and brand.logo_path:
         logo_bytes = await storage.download(brand.logo_path)
         image_bytes = apply_watermark(image_bytes, logo_bytes)
 
-    # 8. Store to Supabase Storage
+    # 9. Store to Supabase Storage
     generation_id = uuid4()
     image_path = f"brands/{brand_id}/generations/{generation_id}.png"
     await storage.upload(image_path, image_bytes, content_type='image/png')
 
-    # 9. Insert record
+    # 10. Insert record (store final dimensions after post-processing)
     generation = await db.insert(generations).values(
         id=generation_id,
         brand_id=brand_id,
@@ -598,13 +648,13 @@ async def generate_image(
         provider=request.provider,
         model=request.model,
         platform_preset=request.platform_preset,
-        width=preset['width'],
-        height=preset['height'],
+        width=target_width,
+        height=target_height,
         logo_mode=request.logo_mode,
         image_path=image_path
     ).returning()
 
-    # 10. Return response
+    # 11. Return response
     return GenerationResponse(
         id=generation.id,
         prompt=generation.prompt,
@@ -650,35 +700,116 @@ async def openai_generate(
         return base64.b64decode(data['data'][0]['b64_json'])
 ```
 
-#### Gemini (Nano Banana Pro)
+#### Gemini (Nano Banana Pro) via Google Gen AI SDK
+
+**Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`
+**Auth**: `x-goog-api-key: <GEMINI_API_KEY>`
+**Python SDK**: `google-genai` (import as `from google import genai`)
+
+**Gemini Image Generation Constraints**:
+- Uses `aspect_ratio` (e.g., `'1:1'`, `'16:9'`, `'9:16'`) instead of explicit width/height
+- Uses `image_size`: `'1K'`, `'2K'`, or `'4K'` for Nano Banana Pro
+- Returns fixed resolutions based on aspect_ratio + image_size combination
+- Post-processing required to achieve exact preset dimensions
 
 ```python
+from google import genai
+from google.genai import types
+import base64
+
 async def gemini_generate(
     api_key: str,
     prompt: str,
-    width: int,
-    height: int,
+    aspect_ratio: str,
+    image_size: str = '1K',
     model: str = 'gemini-3-pro-image-preview'
 ) -> bytes:
-    """Generate image using Gemini API."""
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
-            headers={'x-goog-api-key': api_key},
-            json={
-                'contents': [{'parts': [{'text': prompt}]}],
-                'generationConfig': {
-                    'responseModalities': ['IMAGE'],
-                    'imageSize': {'width': width, 'height': height}
-                }
-            },
-            timeout=120.0
-        )
-        response.raise_for_status()
-        data = response.json()
-        # Extract image from response
-        image_part = data['candidates'][0]['content']['parts'][0]
-        return base64.b64decode(image_part['inlineData']['data'])
+    """
+    Generate image using Gemini API via Google Gen AI SDK.
+
+    Args:
+        api_key: Gemini API key
+        prompt: Full prompt including brand context
+        aspect_ratio: One of '1:1', '16:9', '9:16', '4:3', '3:4'
+        image_size: '1K', '2K', or '4K' (default '1K' for MVP)
+        model: Model ID (default 'gemini-3-pro-image-preview')
+
+    Returns:
+        PNG image bytes
+    """
+    client = genai.Client(api_key=api_key)
+
+    response = client.models.generate_content(
+        model=model,
+        contents=[prompt],
+        config=types.GenerateContentConfig(
+            response_modalities=['Image'],
+            image_config=types.ImageConfig(
+                aspect_ratio=aspect_ratio,
+                image_size=image_size,
+            ),
+        ),
+    )
+
+    # Extract image data from response
+    # Response structure: response.candidates[0].content.parts[0].inline_data
+    for part in response.candidates[0].content.parts:
+        if hasattr(part, 'inline_data') and part.inline_data:
+            return base64.b64decode(part.inline_data.data)
+
+    raise ValueError("No image data in Gemini response")
+```
+
+### Post-Processing: Resize to Preset Dimensions
+
+Because Gemini returns fixed resolutions per aspect ratio/size combination (not arbitrary dimensions), we must resize or crop the output to match the exact preset dimensions.
+
+```python
+from PIL import Image
+import io
+
+def resize_to_preset(
+    image_bytes: bytes,
+    target_width: int,
+    target_height: int
+) -> bytes:
+    """
+    Resize/crop image to exact preset dimensions.
+
+    Strategy:
+    1. Scale image to cover target dimensions (maintain aspect ratio)
+    2. Center-crop to exact target size
+
+    Args:
+        image_bytes: Raw PNG bytes from provider
+        target_width: Exact width required by preset
+        target_height: Exact height required by preset
+
+    Returns:
+        PNG bytes at exact target dimensions
+    """
+    image = Image.open(io.BytesIO(image_bytes))
+    img_width, img_height = image.size
+
+    # Calculate scale factor to cover target (not fit)
+    scale = max(target_width / img_width, target_height / img_height)
+
+    # Resize to cover
+    new_width = int(img_width * scale)
+    new_height = int(img_height * scale)
+    image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+    # Center crop to exact target
+    left = (new_width - target_width) // 2
+    top = (new_height - target_height) // 2
+    right = left + target_width
+    bottom = top + target_height
+    image = image.crop((left, top, right, bottom))
+
+    # Convert back to PNG bytes
+    output = io.BytesIO()
+    image.save(output, format='PNG')
+    return output.getvalue()
 ```
 
 ### Watermark Application
@@ -995,15 +1126,16 @@ frontend/
 |------|-------------|
 | 5.1 | API: Generation pipeline skeleton |
 | 5.2 | API: OpenAI integration |
-| 5.3 | API: Gemini integration |
-| 5.4 | API: Logo watermark logic |
-| 5.5 | API: Generate endpoint |
-| 5.6 | UI: Generator form |
-| 5.7 | UI: Preset selector (grouped) |
-| 5.8 | UI: Provider/model selector |
-| 5.9 | UI: Logo mode selector |
-| 5.10 | UI: Result preview |
-| 5.11 | UI: Download button |
+| 5.3 | API: Gemini integration (with aspect_ratio mapping) |
+| 5.4 | API: Post-processing resize/crop logic |
+| 5.5 | API: Logo watermark logic |
+| 5.6 | API: Generate endpoint |
+| 5.7 | UI: Generator form |
+| 5.8 | UI: Preset selector (grouped by platform) |
+| 5.9 | UI: Provider/model selector |
+| 5.10 | UI: Logo mode selector |
+| 5.11 | UI: Result preview |
+| 5.12 | UI: Download button |
 
 **Checkpoint**: User can generate images with both providers, all presets, all logo modes.
 
@@ -1104,6 +1236,7 @@ PORT=8000
 - [ ] Server-side validation:
   - [ ] Brand ID verified for all operations
   - [ ] User cannot forge brand ownership
+- [ ] Public URLs are shareable. Brand isolation is enforced at DB and API layers. Storage privacy is deferred.
 
 ### RLS Test Cases
 
@@ -1150,9 +1283,10 @@ backend/
 │   │   ├── providers/
 │   │   │   ├── __init__.py
 │   │   │   ├── openai.py
-│   │   │   └── gemini.py
+│   │   │   └── gemini.py           # Uses google-genai SDK
+│   │   ├── postprocess.py          # Resize/crop to preset dimensions
 │   │   └── watermark.py
-│   └── presets.py                  # Platform presets
+│   └── presets.py                  # Platform presets + aspect ratio mapping
 ├── requirements.txt
 ├── Dockerfile
 └── .env.example
@@ -1200,19 +1334,34 @@ supabase/
 
 | Model | Description |
 |-------|-------------|
-| `gpt-image-1` | Latest image generation model |
+| `gpt-image-1` | Latest image generation model (default) |
 | `dall-e-3` | Previous generation (fallback) |
 
 ### Gemini Image Models
 
 | Model | Description |
 |-------|-------------|
-| `gemini-3-pro-image-preview` | Nano Banana Pro - highest quality |
-| `gemini-2.5-flash-image` | Nano Banana - faster, cheaper |
+| `gemini-3-pro-image-preview` | Nano Banana Pro - highest quality (default) |
 
-### Supported Sizes
+### Gemini Aspect Ratios and Sizes
 
-Both providers support custom sizes. We use preset dimensions (see [Platform Presets](#platform-presets)).
+Gemini image generation uses `aspect_ratio` and `image_size` instead of explicit dimensions:
+
+| Aspect Ratio | Supported |
+|--------------|-----------|
+| `1:1` | Square |
+| `16:9` | Landscape |
+| `9:16` | Portrait |
+| `4:3` | Standard landscape |
+| `3:4` | Standard portrait |
+
+| Image Size | Resolution Range |
+|------------|------------------|
+| `1K` | ~1024px on longest edge (default for MVP) |
+| `2K` | ~2048px on longest edge |
+| `4K` | ~4096px on longest edge |
+
+Post-processing (resize/crop via Pillow) is required to achieve exact preset dimensions.
 
 ---
 
