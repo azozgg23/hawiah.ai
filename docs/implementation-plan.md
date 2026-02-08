@@ -1,6 +1,6 @@
 # Basar AI - Implementation Plan
 
-**Version**: 1.4.0
+**Version**: 1.5.0
 **Date**: 2026-02-08
 **Status**: Approved
 **Constitution**: v1.0.0
@@ -51,6 +51,7 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
 | Image URLs | Public (unguessable UUIDs) | Simpler for MVP; UUIDs provide practical privacy |
 | Brand kit | 6 questions | Minimal viable set for brand context |
 | Brand kit storage | Typed columns + derived summary | Better data integrity and easier querying than raw JSON-only |
+| User profile storage | `profiles` table linked to `auth.users` | Supports editable account info without duplicating auth system |
 | Provider keys | Key rotation with single active key per provider | Allows safe rotation without downtime |
 | Generation lifecycle | `pending`/`processing`/`succeeded`/`failed` statuses | Preserves failure history and supports retries/ops visibility |
 | Admin | Operator-only (email allowlist) | Users manage their brands; operator monitors system |
@@ -162,7 +163,23 @@ $$;
 
 ### Tables
 
-#### 1. brands
+#### 1. profiles
+
+```sql
+CREATE TABLE profiles (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name TEXT CHECK (
+    full_name IS NULL OR char_length(btrim(full_name)) BETWEEN 2 AND 120
+  ),
+  avatar_url TEXT CHECK (
+    avatar_url IS NULL OR avatar_url ~ '^https?://.+'
+  ),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+#### 2. brands
 
 ```sql
 CREATE TABLE brands (
@@ -183,7 +200,7 @@ CREATE INDEX idx_brands_owner_created
   ON brands(owner_user_id, created_at DESC);
 ```
 
-#### 2. brand_kits
+#### 3. brand_kits
 
 ```sql
 CREATE TABLE brand_kits (
@@ -211,7 +228,7 @@ CREATE TABLE brand_kits (
 );
 ```
 
-#### 3. provider_keys
+#### 4. provider_keys
 
 ```sql
 CREATE TABLE provider_keys (
@@ -239,7 +256,7 @@ CREATE INDEX idx_provider_keys_lookup
   ON provider_keys(brand_id, provider, created_at DESC);
 ```
 
-#### 4. generations
+#### 5. generations
 
 ```sql
 CREATE TABLE generations (
@@ -294,6 +311,11 @@ CREATE INDEX idx_generations_brand_provider_created
 ### Triggers
 
 ```sql
+CREATE TRIGGER trg_profiles_updated_at
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION set_updated_at();
+
 CREATE TRIGGER trg_brands_updated_at
   BEFORE UPDATE ON brands
   FOR EACH ROW
@@ -353,6 +375,13 @@ CREATE POLICY brands_update ON brands FOR UPDATE
 
 CREATE POLICY brands_delete ON brands FOR DELETE
   USING (owner_user_id = auth.uid());
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY profiles_owner_all ON profiles FOR ALL
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
 
 ALTER TABLE brand_kits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE brand_kits FORCE ROW LEVEL SECURITY;
@@ -544,6 +573,33 @@ Authorization: Bearer <supabase_access_token>
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/health` | Health check (no auth) |
+
+#### Account/Profile
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/me` | Get current user profile |
+| PATCH | `/me` | Update current user profile |
+
+**Update Profile Request**:
+```json
+{
+  "full_name": "Jane Doe",
+  "avatar_url": "https://example.com/avatar.png"
+}
+```
+
+**Profile Response**:
+```json
+{
+  "user_id": "uuid",
+  "email": "jane@example.com",
+  "full_name": "Jane Doe",
+  "avatar_url": "https://example.com/avatar.png",
+  "created_at": "2026-01-28T00:00:00Z",
+  "updated_at": "2026-01-28T00:00:00Z"
+}
+```
 
 #### Brands
 
@@ -1165,6 +1221,8 @@ frontend/
 │   │       └── page.tsx
 │   ├── (dashboard)/
 │   │   ├── layout.tsx              # Dashboard layout (nav, brand selector)
+│   │   ├── account/
+│   │   │   └── page.tsx            # Account settings (profile)
 │   │   ├── brands/
 │   │   │   ├── page.tsx            # Brand list
 │   │   │   └── new/
@@ -1208,6 +1266,8 @@ frontend/
 │   │   ├── keys-tabs.tsx
 │   │   ├── key-card.tsx
 │   │   └── add-key-modal.tsx
+│   ├── account/
+│   │   └── profile-form.tsx
 │   └── brand/
 │       ├── brand-card.tsx
 │       ├── create-brand-modal.tsx
@@ -1220,6 +1280,7 @@ frontend/
 │   ├── presets.ts                  # Platform presets
 │   └── utils.ts                    # Utility functions
 ├── hooks/
+│   ├── use-profile.ts
 │   ├── use-brand.ts
 │   ├── use-brands.ts
 │   ├── use-generations.ts
@@ -1268,7 +1329,7 @@ frontend/
 | 1.1 | Create repo structure (`frontend/`, `backend/`, `supabase/`) |
 | 1.2 | Initialize Supabase project |
 | 1.3 | Create DB extensions, enum types, helper functions |
-| 1.4 | Create database schema (all 4 tables) |
+| 1.4 | Create database schema (all 5 tables, including `profiles`) |
 | 1.5 | Add constraints and indexes (including partial unique for active keys) |
 | 1.6 | Add `updated_at` triggers |
 | 1.7 | Add RLS policies (`ENABLE` + `FORCE`) |
@@ -1279,8 +1340,11 @@ frontend/
 | 1.12 | Initialize Next.js 14 project |
 | 1.13 | Configure Supabase auth |
 | 1.14 | Add auth pages + protected route middleware |
+| 1.15 | API: Add `GET /me` endpoint |
+| 1.16 | API: Add `PATCH /me` endpoint |
+| 1.17 | UI: Add account settings page (profile edit) |
 
-**Checkpoint**: Both services run locally, auth works end-to-end.
+**Checkpoint**: Both services run locally, auth works end-to-end, and user can edit profile info.
 
 ### Phase 2: Dockerization
 
@@ -1475,6 +1539,7 @@ PORT=8000
 - [ ] Works for brand with complete brand kit
 - [ ] Works with OpenAI provider
 - [ ] Works with Gemini provider
+- [ ] User can fetch and update own profile (`GET /me`, `PATCH /me`)
 - [ ] RLS policies tested (query as different user fails)
 - [ ] Generation lifecycle tested (`pending` → `processing` → `succeeded|failed`)
 - [ ] Hard delete verified (DB rows AND storage assets removed)
@@ -1482,6 +1547,7 @@ PORT=8000
 ### Data Integrity Verification
 
 - [ ] `provider_keys`: max one active key per `(brand_id, provider)`
+- [ ] `profiles`: one row per `user_id`; `full_name` length validation enforced
 - [ ] `brand_kits`: `complete` status cannot be saved without required fields
 - [ ] `generations`: `succeeded` rows require `image_path`, failed rows require `error_code`
 - [ ] `updated_at` trigger updates timestamps on every row update
@@ -1499,6 +1565,7 @@ PORT=8000
   - [ ] Browser network tab
   - [ ] Server logs
 - [ ] Brand isolation:
+  - [ ] User A cannot access User B's profile
   - [ ] User A cannot access User B's brands
   - [ ] User A cannot access User B's generations
   - [ ] User A cannot access User B's keys
@@ -1510,12 +1577,17 @@ PORT=8000
 ### RLS Test Cases
 
 ```sql
+-- Test as User A (should see their own profile only)
+SET request.jwt.claims = '{"sub": "user-a-id"}';
+SELECT * FROM profiles; -- Should return only User A profile row
+
 -- Test as User A (should see their brands)
 SET request.jwt.claims = '{"sub": "user-a-id"}';
 SELECT * FROM brands; -- Should return User A's brands
 
--- Test as User B (should NOT see User A's brands)
+-- Test as User B (should NOT see User A's profile or brands)
 SET request.jwt.claims = '{"sub": "user-b-id"}';
+SELECT * FROM profiles WHERE user_id = 'user-a-id'; -- Should return 0 rows
 SELECT * FROM brands WHERE id = 'user-a-brand-id'; -- Should return 0 rows
 ```
 
@@ -1534,12 +1606,14 @@ backend/
 │   ├── auth.py                     # JWT middleware
 │   ├── models/
 │   │   ├── __init__.py
+│   │   ├── profile.py
 │   │   ├── brand.py
 │   │   ├── kit.py
 │   │   ├── key.py
 │   │   └── generation.py
 │   ├── routes/
 │   │   ├── __init__.py
+│   │   ├── me.py
 │   │   ├── brands.py
 │   │   ├── kit.py
 │   │   ├── keys.py
@@ -1585,13 +1659,14 @@ frontend/
 supabase/
 ├── migrations/
 │   ├── 00001_extensions_types_helpers.sql
-│   ├── 00002_create_brands.sql
-│   ├── 00003_create_brand_kits.sql
-│   ├── 00004_create_provider_keys.sql
-│   ├── 00005_create_generations.sql
-│   ├── 00006_add_indexes.sql
-│   ├── 00007_add_updated_at_triggers.sql
-│   └── 00008_add_rls_policies.sql
+│   ├── 00002_create_profiles.sql
+│   ├── 00003_create_brands.sql
+│   ├── 00004_create_brand_kits.sql
+│   ├── 00005_create_provider_keys.sql
+│   ├── 00006_create_generations.sql
+│   ├── 00007_add_indexes.sql
+│   ├── 00008_add_updated_at_triggers.sql
+│   └── 00009_add_rls_policies.sql
 ├── seed.sql                        # (optional test data)
 └── config.toml
 ```
