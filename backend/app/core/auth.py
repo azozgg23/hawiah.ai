@@ -1,0 +1,75 @@
+from typing import Optional
+from uuid import uuid4
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
+import jwt
+from jwt import PyJWTError
+
+from app.config import settings
+
+
+security = HTTPBearer(auto_error=False)
+
+
+class User(BaseModel):
+    id: str
+    email: str
+    access_token: str
+
+
+def _auth_error(status_code: int, code: str, message: str) -> HTTPException:
+    """Build an HTTPException whose detail matches the ErrorResponse contract."""
+    return HTTPException(
+        status_code=status_code,
+        detail={"error": {"code": code, "message": message, "request_id": str(uuid4())}},
+        headers={"WWW-Authenticate": "Bearer"} if status_code == 401 else None,
+    )
+
+
+def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> User:
+    if credentials is None:
+        raise _auth_error(
+            status.HTTP_401_UNAUTHORIZED,
+            "AUTHENTICATION_REQUIRED",
+            "Missing authentication credentials",
+        )
+
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.SUPABASE_JWT_SECRET,
+            algorithms=["HS256"],
+            audience="authenticated",
+        )
+        user_id: str = payload.get("sub")
+        email: str = payload.get("email")
+
+        if user_id is None or email is None:
+            raise _auth_error(
+                status.HTTP_401_UNAUTHORIZED,
+                "INVALID_TOKEN",
+                "Token payload missing required claims",
+            )
+
+        return User(id=user_id, email=email, access_token=credentials.credentials)
+
+    except PyJWTError as e:
+        raise _auth_error(
+            status.HTTP_401_UNAUTHORIZED,
+            "INVALID_TOKEN",
+            f"Invalid token: {str(e)}",
+        )
+
+
+def get_current_admin_user(user: User = Depends(get_current_user)) -> User:
+    admin_emails = settings.ADMIN_EMAILS.split(",") if settings.ADMIN_EMAILS else []
+
+    if user.email not in admin_emails:
+        raise _auth_error(
+            status.HTTP_403_FORBIDDEN,
+            "FORBIDDEN",
+            "Admin access required",
+        )
+
+    return user

@@ -42,35 +42,35 @@
 
 ### Database Schema & Migrations
 
-- [ ] T007 Create migration `supabase/migrations/00001_extensions_types_helpers.sql`: enable pgcrypto extension, create all 6 enum types (provider_t, tone_t, logo_mode_t, kit_status_t, generation_status_t, platform_preset_t), create set_updated_at() trigger function, and create all_hex_colors() validation function per data-model.md
-- [ ] T008 Create migration `supabase/migrations/00002_create_profiles.sql`: create profiles table with user_id PK, full_name, avatar_url, created_at, updated_at per data-model.md
-- [ ] T009 Create migration `supabase/migrations/00003_create_brands.sql`: create brands table with id, owner_user_id, name, logo_path, timestamps, plus uq_brands_owner_name_ci and idx_brands_owner_created indexes per data-model.md
-- [ ] T010 Create migration `supabase/migrations/00004_create_brand_kits.sql`: create brand_kits table with all fields, CHECK constraints for status/completion consistency, colors validation per data-model.md
-- [ ] T011 Create migration `supabase/migrations/00005_create_provider_keys.sql`: create provider_keys table with all fields, partial unique index uq_provider_keys_one_active, and idx_provider_keys_lookup per data-model.md
-- [ ] T012 Create migration `supabase/migrations/00006_create_generations.sql`: create generations table with all fields, status-dependent CHECK constraints (succeeded/failed/pending/processing), and all 3 indexes per data-model.md
-- [ ] T013 Create migration `supabase/migrations/00007_add_updated_at_triggers.sql`: add BEFORE UPDATE triggers calling set_updated_at() for all 5 tables (profiles, brands, brand_kits, provider_keys, generations)
-- [ ] T014 Create migration `supabase/migrations/00008_add_rls_policies.sql`: create is_brand_owner() SECURITY DEFINER function, ENABLE and FORCE RLS on all 5 tables, create all SELECT/INSERT/UPDATE/DELETE policies per data-model.md (profiles uses user_id = auth.uid(), brand-scoped tables use is_brand_owner())
-- [ ] T015 Create migration `supabase/migrations/00009_create_storage_bucket.sql`: insert brand-assets public bucket with 5MB file size limit and allowed MIME types, create storage RLS policies (public read, owner-only write/update/delete using storage.foldername()) per research.md
-- [ ] T016 Create migration `supabase/migrations/00010_auto_create_profile_trigger.sql`: create handle_new_user() SECURITY DEFINER function that inserts into profiles on auth.users INSERT, extracting full_name and avatar_url from raw_user_meta_data with ON CONFLICT DO NOTHING per research.md
+- [X] T007 Create migration `supabase/migrations/00001_extensions_types_helpers.sql`: enable pgcrypto extension, create all 6 enum types (provider_t, tone_t, logo_mode_t, kit_status_t, generation_status_t, platform_preset_t), create set_updated_at() trigger function, and create all_hex_colors() validation function per data-model.md
+- [X] T008 Create migration `supabase/migrations/00002_create_profiles.sql`: create profiles table with user_id PK, full_name, avatar_url, created_at, updated_at per data-model.md
+- [X] T009 Create migration `supabase/migrations/00003_create_brands.sql`: create brands table with id, owner_user_id, name, logo_path, timestamps, plus uq_brands_owner_name_ci and idx_brands_owner_created indexes per data-model.md
+- [X] T010 Create migration `supabase/migrations/00004_create_brand_kits.sql`: create brand_kits table with all fields, CHECK constraints for status/completion consistency, colors validation per data-model.md
+- [X] T011 Create migration `supabase/migrations/00005_create_provider_keys.sql`: create provider_keys table with all fields, partial unique index uq_provider_keys_one_active, and idx_provider_keys_lookup per data-model.md
+- [X] T012 Create migration `supabase/migrations/00006_create_generations.sql`: create generations table with all fields, status-dependent CHECK constraints (succeeded/failed/pending/processing), and all 3 indexes per data-model.md
+- [X] T013 Create migration `supabase/migrations/00007_add_updated_at_triggers.sql`: add BEFORE UPDATE triggers calling set_updated_at() for all 5 tables (profiles, brands, brand_kits, provider_keys, generations)
+- [X] T014 Create migration `supabase/migrations/00008_add_rls_policies.sql`: create is_brand_owner() SECURITY DEFINER function, ENABLE and FORCE RLS on all 5 tables, create all SELECT/INSERT/UPDATE/DELETE policies per data-model.md (profiles uses user_id = auth.uid(), brand-scoped tables use is_brand_owner())
+- [X] T015 Create migration `supabase/migrations/00009_create_storage_bucket.sql`: insert brand-assets public bucket with 5MB file size limit and allowed MIME types, create storage RLS policies (public read, owner-only write/update/delete using storage.foldername()) per research.md
+- [X] T016 Create migration `supabase/migrations/00010_auto_create_profile_trigger.sql`: create handle_new_user() SECURITY DEFINER function that inserts into profiles on auth.users INSERT, extracting full_name and avatar_url from raw_user_meta_data with ON CONFLICT DO NOTHING per research.md
 
 ### Supabase Auth Configuration
 
-- [ ] T016b Configure Supabase Auth email settings: set Site URL to http://localhost:3000, add http://localhost:3000/auth/confirm to Redirect URLs. For local Supabase, update `supabase/config.toml` with site_url and redirect_urls under [auth]. For remote Supabase, configure via Dashboard > Authentication > URL Configuration. This ensures email confirmation links route correctly per FR-002
+- [X] T016b Configure Supabase Auth email settings: set Site URL to http://localhost:3000, add http://localhost:3000/auth/confirm to Redirect URLs. For local Supabase, update `supabase/config.toml` with site_url and redirect_urls under [auth]. For remote Supabase, configure via Dashboard > Authentication > URL Configuration. This ensures email confirmation links route correctly per FR-002
 
 ### Backend Framework
 
-- [ ] T017 Create `backend/app/config.py`: Pydantic Settings class with SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET, STORAGE_BUCKET, ADMIN_EMAILS, HOST, PORT. Load from .env file
-- [ ] T018 [P] Create `backend/app/core/supabase.py`: singleton get_service_client() with @lru_cache and shared httpx.Client(timeout=30.0), plus get_user_client(access_token) factory for user-scoped RLS-respecting operations per research.md
-- [ ] T019 [P] Create `backend/app/core/auth.py`: HTTPBearer security scheme, User pydantic model (id, email, access_token), get_current_user() dependency that decodes JWT with PyJWT using HS256 and audience="authenticated", extracting sub and email claims. Include get_current_admin_user() dependency checking ADMIN_EMAILS per research.md and contracts/api.yaml
-- [ ] T020 Create `backend/app/main.py`: FastAPI app with lifespan, CORSMiddleware (origins: localhost:3000, 127.0.0.1:3000, localhost; allow_credentials=True), register health and me routers per research.md
+- [X] T017 Create `backend/app/config.py`: Pydantic Settings class with SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET, STORAGE_BUCKET, ADMIN_EMAILS, HOST, PORT. Load from .env file
+- [X] T018 [P] Create `backend/app/core/supabase.py`: singleton get_service_client() with @lru_cache and shared httpx.Client(timeout=30.0), plus get_user_client(access_token) factory for user-scoped RLS-respecting operations per research.md
+- [X] T019 [P] Create `backend/app/core/auth.py`: HTTPBearer security scheme, User pydantic model (id, email, access_token), get_current_user() dependency that decodes JWT with PyJWT using HS256 and audience="authenticated", extracting sub and email claims. Include get_current_admin_user() dependency checking ADMIN_EMAILS per research.md and contracts/api.yaml
+- [X] T020 Create `backend/app/main.py`: FastAPI app with lifespan, CORSMiddleware (origins: localhost:3000, 127.0.0.1:3000, localhost; allow_credentials=True), register health and me routers per research.md
 
 ### Frontend Framework
 
-- [ ] T021 Create `frontend/lib/supabase/client.ts`: export createClient() using createBrowserClient from @supabase/ssr with NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY per research.md
-- [ ] T022 [P] Create `frontend/lib/supabase/server.ts`: export async createClient() using createServerClient from @supabase/ssr with cookies() getAll/setAll pattern per research.md
-- [ ] T023 [P] Create `frontend/lib/api.ts`: fetch wrapper for backend API calls. In client components, obtain the access token via `supabase.auth.getSession()` and pass it as `Authorization: Bearer <token>` header to /api/* endpoints. Handle 401 responses by calling `supabase.auth.signOut()` and redirecting to /login via `window.location.href`
-- [ ] T024 [P] Create `frontend/types/index.ts`: TypeScript type definitions for Profile (user_id, email, full_name, avatar_url, created_at, updated_at), UpdateProfileRequest (full_name?, avatar_url?), ErrorResponse (error.code, error.message, error.request_id) per contracts/api.yaml
-- [ ] T025 Configure `frontend/next.config.js`: add rewrites() rule proxying /api/:path* to http://127.0.0.1:8000/:path* per research.md
+- [X] T021 Create `frontend/lib/supabase/client.ts`: export createClient() using createBrowserClient from @supabase/ssr with NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY per research.md
+- [X] T022 [P] Create `frontend/lib/supabase/server.ts`: export async createClient() using createServerClient from @supabase/ssr with cookies() getAll/setAll pattern per research.md
+- [X] T023 [P] Create `frontend/lib/api.ts`: fetch wrapper for backend API calls. In client components, obtain the access token via `supabase.auth.getSession()` and pass it as `Authorization: Bearer <token>` header to /api/* endpoints. Handle 401 responses by calling `supabase.auth.signOut()` and redirecting to /login via `window.location.href`
+- [X] T024 [P] Create `frontend/types/index.ts`: TypeScript type definitions for Profile (user_id, email, full_name, avatar_url, created_at, updated_at), UpdateProfileRequest (full_name?, avatar_url?), ErrorResponse (error.code, error.message, error.request_id) per contracts/api.yaml
+- [X] T025 Configure `frontend/next.config.js`: add rewrites() rule proxying /api/:path* to http://127.0.0.1:8000/:path* per research.md
 
 **Checkpoint**: Foundation ready — database schema applied, backend framework running with CORS and auth middleware, frontend framework initialized with Supabase clients and API proxy. User story implementation can now begin.
 
