@@ -1,126 +1,50 @@
-<!--
-SYNC IMPACT REPORT
-==================
-Version change: 0.0.0 → 1.0.0
-Bump rationale: MAJOR - Initial constitution adoption for new project
-
-Modified principles: N/A (initial version)
-Added sections:
-  - Principle I: Product Truth
-  - Principle II: Non-Negotiables
-  - Principle III: Tech Constraints
-  - Principle IV: Data Rules
-  - Principle V: UX Rules
-  - Principle VI: Security Rules
-  - Principle VII: Definition of Done
-  - Governance section
-
-Removed sections: N/A (initial version)
-
-Templates status:
-  - .specify/templates/plan-template.md ✅ No updates needed - generic Constitution Check section will inherit
-  - .specify/templates/spec-template.md ✅ No updates needed - requirements align with constitution
-  - .specify/templates/tasks-template.md ✅ No updates needed - task structure supports RLS tests & hard delete verification
-  - .specify/templates/checklist-template.md ✅ No updates needed - generic template
-  - .specify/templates/agent-file-template.md ✅ No updates needed - generic template
-
-Deferred TODOs: None
--->
-
-# Basar AI Constitution
+# [PROJECT_NAME] Constitution
+<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
 
 ## Core Principles
 
-### I. Product Truth
+### [PRINCIPLE_1_NAME]
+<!-- Example: I. Library-First -->
+[PRINCIPLE_1_DESCRIPTION]
+<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
 
-Basar AI is a multi-brand SaaS for generating social images with the following foundational rules:
+### [PRINCIPLE_2_NAME]
+<!-- Example: II. CLI Interface -->
+[PRINCIPLE_2_DESCRIPTION]
+<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
 
-- Tenancy MUST be based on Brand; every resource belongs to exactly one brand
-- One user owns brands; sharing is not supported; only owner role exists
-- No billing in MVP; users MUST provide their own API keys (BYOK model)
-- Image generation is the sole product capability
+### [PRINCIPLE_3_NAME]
+<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
+[PRINCIPLE_3_DESCRIPTION]
+<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
 
-### II. Non-Negotiables
+### [PRINCIPLE_4_NAME]
+<!-- Example: IV. Integration Testing -->
+[PRINCIPLE_4_DESCRIPTION]
+<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
 
-These constraints MUST NOT be violated under any circumstances:
+### [PRINCIPLE_5_NAME]
+<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
+[PRINCIPLE_5_DESCRIPTION]
+<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
 
-- **Brand Isolation**: Every resource (generations, brand kits, keys) MUST belong to exactly one brand
-- **Hard Delete**: When a user deletes a brand or generation, the system MUST remove both database rows AND stored assets; soft delete is forbidden
-- **Key Secrecy**: Provider keys MUST NEVER appear in logs; keys MUST NEVER be sent to the client
-- **Official Endpoints Only**: The system MUST use only official API endpoints for OpenAI and Gemini; no proxies or unofficial APIs
-- **PNG Output Only**: All generated images MUST be output as PNG format
+## [SECTION_2_NAME]
+<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
 
-### III. Tech Constraints
+[SECTION_2_CONTENT]
+<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
 
-The technology stack is fixed for MVP:
+## [SECTION_3_NAME]
+<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | Next.js 14 monolith |
-| Backend | FastAPI |
-| Auth, DB, Vault, Storage | Supabase |
-| Hosting | Bunny Magic Containers |
-| Providers | OpenAI, Gemini |
-| Capability | Image generation only |
-
-Deviations from this stack require explicit constitutional amendment.
-
-### IV. Data Rules
-
-All data persistence MUST follow these rules:
-
-- **Generation Records**: MUST store prompt, provider, model, dimensions preset, and image storage path
-- **Brand Kit**: MUST store brand kit answers and derived brand summary
-- **Provider Keys**: MUST be stored in Supabase Vault; database MUST reference keys by opaque IDs only, never storing raw key values
-
-### V. UX Rules
-
-User experience MUST adhere to these patterns:
-
-- Free-form prompt is the primary input mechanism for image generation
-- Brand kit MUST be created via an interview flow; direct editing is secondary
-- Platform preset (dimensions) MUST be selected for each generation; no default fallback
-- History MUST be first-class; MUST be filterable by brand and provider
-
-### VI. Security Rules
-
-Security implementation MUST follow these requirements:
-
-- Supabase Row Level Security (RLS) MUST be enabled on all tables
-- Brand ID MUST be verified server-side for all read and write operations; client assertions are insufficient
-- Provider API calls MUST originate from server only; client MUST NEVER call providers directly
-- Logs MUST contain only request IDs and safe metadata; no keys, tokens, or PII in logs
-
-### VII. Definition of Done
-
-A feature is complete only when ALL of the following are verified:
-
-- [ ] Works correctly for a brand with no brand kit (0 answers)
-- [ ] Works correctly for a brand with a completed brand kit
-- [ ] Works with OpenAI provider
-- [ ] Works with Gemini provider
-- [ ] RLS policies tested OR explicit integration checks documented
-- [ ] Hard delete verified: database rows removed AND storage assets removed
+[SECTION_3_CONTENT]
+<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
 
 ## Governance
+<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-### Amendment Process
+[GOVERNANCE_RULES]
+<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
 
-1. Amendments MUST be documented in this file with version increment
-2. Changes to Non-Negotiables (Principle II) require explicit justification
-3. All dependent templates MUST be reviewed after amendments
-4. Sync Impact Report MUST be updated at the top of this file
-
-### Versioning Policy
-
-- **MAJOR**: Backward-incompatible changes to principles or removal of constraints
-- **MINOR**: New principles added or existing principles materially expanded
-- **PATCH**: Clarifications, wording improvements, non-semantic changes
-
-### Compliance
-
-- All pull requests MUST verify compliance with this constitution
-- Plan documents MUST include a Constitution Check section
-- Definition of Done checklist MUST be completed before feature merge
-
-**Version**: 1.0.0 | **Ratified**: 2025-01-28 | **Last Amended**: 2025-01-28
+**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
+<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
