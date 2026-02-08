@@ -9,13 +9,20 @@ Auto-generated from all feature plans. Last updated: 2026-02-08
 ## Project Structure
 
 ```text
-src/
-tests/
+backend/
+frontend/
+supabase/
 ```
 
 ## Commands
 
-cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] pytest [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] ruff check .
+```bash
+# Backend
+cd backend && pytest && ruff check .
+
+# Frontend
+cd frontend && npm run dev
+```
 
 ## Code Style
 

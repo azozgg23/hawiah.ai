@@ -105,7 +105,7 @@ frontend/
 ├── types/
 │   └── index.ts                    # TypeScript type definitions
 ├── middleware.ts                   # Auth middleware (route protection, session refresh)
-├── next.config.js                  # API rewrites to FastAPI backend
+├── next.config.mjs                 # API rewrites to FastAPI backend
 ├── tailwind.config.ts
 ├── components.json                 # shadcn/ui config
 ├── package.json
@@ -141,7 +141,7 @@ supabase/
 
 ### API Proxy
 
-Next.js `rewrites` in `next.config.js` proxies `/api/*` to `http://127.0.0.1:8000/*`. From the browser's perspective, all requests are same-origin. CORS is configured as fallback for development scenarios.
+Next.js `rewrites` in `next.config.mjs` proxies `/api/*` to `http://127.0.0.1:8000/*`. From the browser's perspective, all requests are same-origin. CORS is configured as fallback for development scenarios.
 
 ### Supabase Client Strategy (Backend)
 
