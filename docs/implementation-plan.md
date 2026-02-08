@@ -1,7 +1,7 @@
 # Basar AI - Implementation Plan
 
-**Version**: 1.0.0
-**Date**: 2026-01-28
+**Version**: 1.1.0
+**Date**: 2026-02-08
 **Status**: Approved
 **Constitution**: v1.0.0
 
@@ -49,6 +49,9 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
 | Logo usage | Per-generation choice | Flexibility: none / prompt / watermark / both |
 | Image URLs | Public (unguessable UUIDs) | Simpler for MVP; UUIDs provide practical privacy |
 | Brand kit | 6 questions | Minimal viable set for brand context |
+| Brand kit storage | Typed columns + derived summary | Better data integrity and easier querying than raw JSON-only |
+| Provider keys | Key rotation with single active key per provider | Allows safe rotation without downtime |
+| Generation lifecycle | `pending`/`processing`/`succeeded`/`failed` statuses | Preserves failure history and supports retries/ops visibility |
 | Admin | Operator-only (email allowlist) | Users manage their brands; operator monitors system |
 | AI Models | OpenAI `gpt-image-1` + Gemini `gemini-3-pro-image-preview` | Latest image generation models |
 | Summary derivation | Template concatenation | Deterministic, fast, no extra API costs |
@@ -111,6 +114,51 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
 
 ## Database Schema
 
+### Schema Principles
+
+- Use strict types/enums for domain fields (`provider`, `logo_mode`, `status`, `platform_preset`)
+- Keep mutable records auditable (`created_at`, `updated_at`, status + failure fields)
+- Enforce ownership and tenant isolation at both API and DB layers (RLS + server checks)
+- Support operational workflows from day 1 (key rotation, failed generation records)
+
+### Core Types and Helpers
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TYPE provider_t AS ENUM ('openai', 'gemini');
+CREATE TYPE tone_t AS ENUM ('formal', 'casual', 'playful', 'professional', 'friendly');
+CREATE TYPE logo_mode_t AS ENUM ('none', 'prompt', 'watermark', 'both');
+CREATE TYPE kit_status_t AS ENUM ('not_started', 'in_progress', 'complete');
+CREATE TYPE generation_status_t AS ENUM ('pending', 'processing', 'succeeded', 'failed');
+CREATE TYPE platform_preset_t AS ENUM (
+  'instagram_post', 'instagram_story', 'instagram_reel_cover',
+  'facebook_post', 'facebook_cover', 'facebook_story',
+  'twitter_post', 'twitter_header',
+  'linkedin_post', 'linkedin_banner',
+  'tiktok_video_cover',
+  'youtube_thumbnail', 'youtube_banner'
+);
+
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION all_hex_colors(color_values TEXT[])
+RETURNS BOOLEAN
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT COALESCE(bool_and(v ~* '^#[0-9A-F]{6}$'), TRUE)
+  FROM unnest(color_values) AS t(v);
+$$;
+
+```
+
 ### Tables
 
 #### 1. brands
@@ -118,13 +166,20 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
 ```sql
 CREATE TABLE brands (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_user_id UUID NOT NULL REFERENCES auth.users(id),
-  name TEXT NOT NULL,
-  logo_path TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
+  owner_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL CHECK (char_length(btrim(name)) BETWEEN 2 AND 120),
+  logo_path TEXT CHECK (
+    logo_path IS NULL
+    OR logo_path ~ '^brands/[0-9a-f-]+/logo\\.[A-Za-z0-9]+$'
+  ),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_brands_owner ON brands(owner_user_id);
+CREATE UNIQUE INDEX uq_brands_owner_name_ci
+  ON brands(owner_user_id, lower(name));
+CREATE INDEX idx_brands_owner_created
+  ON brands(owner_user_id, created_at DESC);
 ```
 
 #### 2. brand_kits
@@ -132,24 +187,27 @@ CREATE INDEX idx_brands_owner ON brands(owner_user_id);
 ```sql
 CREATE TABLE brand_kits (
   brand_id UUID PRIMARY KEY REFERENCES brands(id) ON DELETE CASCADE,
-  answers JSONB NOT NULL DEFAULT '{}',
+  tagline TEXT CHECK (tagline IS NULL OR char_length(tagline) <= 160),
+  tone tone_t,
+  audience TEXT CHECK (audience IS NULL OR char_length(btrim(audience)) BETWEEN 2 AND 500),
+  colors TEXT[] NOT NULL DEFAULT '{}',
+  avoid_words TEXT,
   summary TEXT,
-  status TEXT NOT NULL DEFAULT 'not_started'
-    CHECK (status IN ('not_started', 'in_progress', 'complete')),
-  updated_at TIMESTAMPTZ DEFAULT now()
+  status kit_status_t NOT NULL DEFAULT 'not_started',
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (cardinality(colors) <= 3),
+  CHECK (all_hex_colors(colors)),
+  CHECK (
+    status <> 'complete'
+    OR (tone IS NOT NULL AND audience IS NOT NULL AND cardinality(colors) >= 1)
+  ),
+  CHECK (
+    (status = 'complete' AND completed_at IS NOT NULL)
+    OR (status <> 'complete' AND completed_at IS NULL)
+  )
 );
-```
-
-**Answers Schema**:
-```json
-{
-  "name": "string",
-  "tagline": "string | null",
-  "tone": "formal | casual | playful | professional | friendly",
-  "audience": "string",
-  "colors": ["#hex1", "#hex2", "#hex3"],
-  "avoid_words": "string | null"
-}
 ```
 
 #### 3. provider_keys
@@ -158,16 +216,26 @@ CREATE TABLE brand_kits (
 CREATE TABLE provider_keys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
-  provider TEXT NOT NULL CHECK (provider IN ('openai', 'gemini')),
-  vault_secret_id TEXT NOT NULL,
-  label TEXT,
+  provider provider_t NOT NULL,
+  vault_secret_id UUID NOT NULL,
+  label TEXT CHECK (label IS NULL OR char_length(label) <= 100),
+  key_hint TEXT CHECK (key_hint IS NULL OR key_hint ~ '^[A-Za-z0-9_-]{2,16}$'),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  is_valid BOOLEAN,
   last_validated_at TIMESTAMPTZ,
   last_validation_error TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(brand_id, provider)
+  last_used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_provider_keys_brand ON provider_keys(brand_id);
+-- Exactly one active key per brand/provider, while still allowing historical keys.
+CREATE UNIQUE INDEX uq_provider_keys_one_active
+  ON provider_keys(brand_id, provider)
+  WHERE is_active;
+
+CREATE INDEX idx_provider_keys_lookup
+  ON provider_keys(brand_id, provider, created_at DESC);
 ```
 
 #### 4. generations
@@ -176,28 +244,101 @@ CREATE INDEX idx_provider_keys_brand ON provider_keys(brand_id);
 CREATE TABLE generations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
-  prompt TEXT NOT NULL,
-  provider TEXT NOT NULL CHECK (provider IN ('openai', 'gemini')),
-  model TEXT NOT NULL,
-  platform_preset TEXT NOT NULL,
-  width INT NOT NULL,
-  height INT NOT NULL,
-  logo_mode TEXT NOT NULL DEFAULT 'none'
-    CHECK (logo_mode IN ('none', 'prompt', 'watermark', 'both')),
-  image_path TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
+  prompt TEXT NOT NULL CHECK (char_length(btrim(prompt)) BETWEEN 3 AND 4000),
+  provider provider_t NOT NULL,
+  model TEXT NOT NULL CHECK (char_length(model) BETWEEN 3 AND 100),
+  platform_preset platform_preset_t NOT NULL,
+  width INT NOT NULL CHECK (width BETWEEN 256 AND 4096),
+  height INT NOT NULL CHECK (height BETWEEN 256 AND 4096),
+  logo_mode logo_mode_t NOT NULL DEFAULT 'none',
+  status generation_status_t NOT NULL DEFAULT 'pending',
+  provider_request_id TEXT,
+  image_path TEXT CHECK (
+    image_path IS NULL
+    OR image_path ~ '^brands/[0-9a-f-]+/generations/[0-9a-f-]+\\.png$'
+  ),
+  error_code TEXT,
+  error_message TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  completed_at TIMESTAMPTZ,
+  CHECK (
+    (status = 'succeeded'
+      AND image_path IS NOT NULL
+      AND error_code IS NULL
+      AND error_message IS NULL
+      AND completed_at IS NOT NULL)
+    OR
+    (status = 'failed'
+      AND image_path IS NULL
+      AND error_code IS NOT NULL
+      AND completed_at IS NOT NULL)
+    OR
+    (status IN ('pending', 'processing')
+      AND image_path IS NULL
+      AND error_code IS NULL
+      AND error_message IS NULL
+      AND completed_at IS NULL)
+  )
 );
 
-CREATE INDEX idx_generations_brand_created ON generations(brand_id, created_at DESC);
+CREATE INDEX idx_generations_brand_created
+  ON generations(brand_id, created_at DESC);
+CREATE INDEX idx_generations_brand_status_created
+  ON generations(brand_id, status, created_at DESC);
+CREATE INDEX idx_generations_brand_provider_created
+  ON generations(brand_id, provider, created_at DESC);
+```
+
+### Triggers
+
+```sql
+CREATE TRIGGER trg_brands_updated_at
+  BEFORE UPDATE ON brands
+  FOR EACH ROW
+  EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_brand_kits_updated_at
+  BEFORE UPDATE ON brand_kits
+  FOR EACH ROW
+  EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_provider_keys_updated_at
+  BEFORE UPDATE ON provider_keys
+  FOR EACH ROW
+  EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_generations_updated_at
+  BEFORE UPDATE ON generations
+  FOR EACH ROW
+  EXECUTE FUNCTION set_updated_at();
 ```
 
 ### Row Level Security (RLS)
 
-All tables enforce brand ownership:
+All tenant tables enforce ownership. Enable and force RLS on every table.
 
 ```sql
--- brands: direct ownership check
+CREATE OR REPLACE FUNCTION is_brand_owner(p_brand_id UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM brands b
+    WHERE b.id = p_brand_id
+      AND b.owner_user_id = auth.uid()
+  );
+$$;
+
+REVOKE ALL ON FUNCTION is_brand_owner(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION is_brand_owner(UUID) TO authenticated;
+
 ALTER TABLE brands ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brands FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY brands_select ON brands FOR SELECT
   USING (owner_user_id = auth.uid());
@@ -206,36 +347,42 @@ CREATE POLICY brands_insert ON brands FOR INSERT
   WITH CHECK (owner_user_id = auth.uid());
 
 CREATE POLICY brands_update ON brands FOR UPDATE
-  USING (owner_user_id = auth.uid());
+  USING (owner_user_id = auth.uid())
+  WITH CHECK (owner_user_id = auth.uid());
 
 CREATE POLICY brands_delete ON brands FOR DELETE
   USING (owner_user_id = auth.uid());
 
--- brand_kits: via brand ownership
 ALTER TABLE brand_kits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_kits FORCE ROW LEVEL SECURITY;
 
-CREATE POLICY brand_kits_all ON brand_kits FOR ALL
-  USING (brand_id IN (SELECT id FROM brands WHERE owner_user_id = auth.uid()));
+CREATE POLICY brand_kits_owner_all ON brand_kits FOR ALL
+  USING (is_brand_owner(brand_id))
+  WITH CHECK (is_brand_owner(brand_id));
 
--- provider_keys: via brand ownership
 ALTER TABLE provider_keys ENABLE ROW LEVEL SECURITY;
+ALTER TABLE provider_keys FORCE ROW LEVEL SECURITY;
 
-CREATE POLICY provider_keys_all ON provider_keys FOR ALL
-  USING (brand_id IN (SELECT id FROM brands WHERE owner_user_id = auth.uid()));
+CREATE POLICY provider_keys_owner_all ON provider_keys FOR ALL
+  USING (is_brand_owner(brand_id))
+  WITH CHECK (is_brand_owner(brand_id));
 
--- generations: via brand ownership
 ALTER TABLE generations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE generations FORCE ROW LEVEL SECURITY;
 
-CREATE POLICY generations_all ON generations FOR ALL
-  USING (brand_id IN (SELECT id FROM brands WHERE owner_user_id = auth.uid()));
+CREATE POLICY generations_owner_all ON generations FOR ALL
+  USING (is_brand_owner(brand_id))
+  WITH CHECK (is_brand_owner(brand_id));
 ```
+
+`SUPABASE_SERVICE_ROLE_KEY` bypasses RLS and is backend-only.
 
 ### Storage
 
 - **Bucket**: `brand-assets` (public)
 - **Paths**:
-  - `brands/{brandId}/logo.png` - Brand logo
-  - `brands/{brandId}/generations/{generationId}.png` - Generated images
+  - `brands/{brandId}/logo.{ext}` - Brand logo
+  - `brands/{brandId}/generations/{generationId}.png` - Generated image (`status = succeeded` only)
 
 ---
 
@@ -322,7 +469,7 @@ export const PRESET_TO_ASPECT_RATIO: Record<PlatformPreset, string> = {
 
 | # | Field | Question | Type | Required |
 |---|-------|----------|------|----------|
-| 1 | `name` | What is your brand name? | text | Yes |
+| 1 | `name` | What is your brand name? (stored in `brands.name`) | text | Yes |
 | 2 | `tagline` | What is your brand's tagline or slogan? | text | No |
 | 3 | `tone` | What tone should your content have? | select | Yes |
 | 4 | `audience` | Who is your target audience? | text | Yes |
@@ -340,10 +487,10 @@ export const PRESET_TO_ASPECT_RATIO: Record<PlatformPreset, string> = {
 ### Summary Derivation Template
 
 ```python
-def derive_summary(answers: dict) -> str:
+def derive_summary(brand_name: str, answers: dict) -> str:
     """Generate brand context summary from interview answers."""
     lines = [
-        f"Brand: {answers['name']}",
+        f"Brand: {brand_name}",
         f"Tagline: {answers.get('tagline') or 'None specified'}",
         f"Tone: {answers['tone']}",
         f"Audience: {answers['audience']}",
@@ -436,8 +583,8 @@ Authorization: Bearer <supabase_access_token>
 **Upsert Kit Request**:
 ```json
 {
+  "name": "My Brand",
   "answers": {
-    "name": "My Brand",
     "tagline": "Innovation for everyone",
     "tone": "professional",
     "audience": "Small business owners aged 25-45",
@@ -451,9 +598,17 @@ Authorization: Bearer <supabase_access_token>
 ```json
 {
   "brand_id": "uuid",
-  "answers": { ... },
+  "brand_name": "My Brand",
+  "answers": {
+    "tagline": "Innovation for everyone",
+    "tone": "professional",
+    "audience": "Small business owners aged 25-45",
+    "colors": ["#FF5733", "#3498DB", "#2ECC71"],
+    "avoid_words": "cheap, discount, budget"
+  },
   "summary": "Brand: My Brand\nTagline: Innovation for everyone\n...",
   "status": "complete",
+  "completed_at": "2026-01-28T00:00:00Z",
   "updated_at": "2026-01-28T00:00:00Z"
 }
 ```
@@ -464,6 +619,7 @@ Authorization: Bearer <supabase_access_token>
 |--------|------|-------------|
 | GET | `/brands/{id}/keys` | List keys for brand |
 | POST | `/brands/{id}/keys` | Add a provider key |
+| PATCH | `/brands/{id}/keys/{keyId}/activate` | Activate key (deactivates prior active key for provider) |
 | POST | `/brands/{id}/keys/{keyId}/validate` | Validate a key |
 | DELETE | `/brands/{id}/keys/{keyId}` | Delete a key |
 
@@ -472,7 +628,8 @@ Authorization: Bearer <supabase_access_token>
 {
   "provider": "openai",
   "key": "sk-...",
-  "label": "Production Key"
+  "label": "Production Key",
+  "make_active": true
 }
 ```
 
@@ -482,6 +639,9 @@ Authorization: Bearer <supabase_access_token>
   "id": "uuid",
   "provider": "openai",
   "label": "Production Key",
+  "key_hint": "***A1B2",
+  "is_active": true,
+  "is_valid": true,
   "last_validated_at": "2026-01-28T00:00:00Z",
   "last_validation_error": null,
   "created_at": "2026-01-28T00:00:00Z"
@@ -493,7 +653,8 @@ Authorization: Bearer <supabase_access_token>
 {
   "valid": true,
   "validated_at": "2026-01-28T00:00:00Z",
-  "error": null
+  "error": null,
+  "key_id": "uuid"
 }
 ```
 
@@ -528,8 +689,11 @@ Authorization: Bearer <supabase_access_token>
   "width": 1080,
   "height": 1080,
   "logo_mode": "watermark",
+  "status": "succeeded",
   "image_url": "https://...",
-  "created_at": "2026-01-28T00:00:00Z"
+  "error_code": null,
+  "created_at": "2026-01-28T00:00:00Z",
+  "completed_at": "2026-01-28T00:00:03Z"
 }
 ```
 
@@ -537,6 +701,7 @@ Authorization: Bearer <supabase_access_token>
 - `page` (default: 1)
 - `per_page` (default: 20, max: 100)
 - `provider` (optional filter: `openai` | `gemini`)
+- `status` (optional filter: `pending` | `processing` | `succeeded` | `failed`)
 
 #### Admin (Operator Only)
 
@@ -552,6 +717,8 @@ Gated by `ADMIN_EMAILS` environment variable.
 ## Generation Pipeline
 
 ```python
+from datetime import datetime, timezone
+
 async def generate_image(
     brand_id: UUID,
     request: GenerateRequest,
@@ -562,16 +729,16 @@ async def generate_image(
 
     Steps:
     1. Verify brand ownership (server-side)
-    2. Get brand kit summary (if exists)
-    3. Resolve dimensions from preset
-    4. Fetch provider key from Vault
+    2. Resolve dimensions from preset
+    3. Fetch active provider key from DB + Vault
+    4. Insert generation row as `pending`
     5. Build full prompt (kit summary + user prompt + logo instruction)
     6. Call provider API (with provider-specific handling)
     7. Post-process image (resize/crop to exact preset dimensions)
     8. Apply logo watermark (if requested)
     9. Store PNG to Supabase Storage
-    10. Insert generation record
-    11. Return generation with public URL
+    10. Update generation row to `succeeded` or `failed`
+    11. Return generation response
     """
 
     # 1. Verify ownership
@@ -579,80 +746,105 @@ async def generate_image(
     if not brand:
         raise HTTPException(404, "Brand not found")
 
-    # 2. Get brand kit
-    kit = await get_brand_kit(brand_id)
-
-    # 3. Build full prompt
-    prompt_parts = []
-    if kit and kit.summary:
-        prompt_parts.append(f"Brand Context:\n{kit.summary}")
-
-    if request.logo_mode in ('prompt', 'both') and brand.logo_path:
-        prompt_parts.append("Incorporate the brand logo naturally into the image.")
-
-    prompt_parts.append(f"Image Request:\n{request.prompt}")
-    full_prompt = "\n\n".join(prompt_parts)
-
-    # 4. Resolve preset dimensions
+    # 2. Resolve preset dimensions
     preset = PLATFORM_PRESETS[request.platform_preset]
     target_width = preset['width']
     target_height = preset['height']
 
-    # 5. Fetch key from Vault
-    key = await get_provider_key(brand_id, request.provider)
+    # 3. Fetch active key
+    key = await get_active_provider_key(brand_id, request.provider)
     if not key:
         raise HTTPException(400, f"No {request.provider} key configured for this brand")
-
-    api_key = await vault.get_secret(key.vault_secret_id)
-
-    # 6. Call provider
-    if request.provider == 'openai':
-        image_bytes = await openai_generate(
-            api_key=api_key,
-            prompt=full_prompt,
-            width=target_width,
-            height=target_height,
-            model=request.model or 'gpt-image-1'
-        )
-    else:
-        # Gemini requires aspect_ratio and image_size, not width/height
-        aspect_ratio = PRESET_TO_ASPECT_RATIO[request.platform_preset]
-        image_bytes = await gemini_generate(
-            api_key=api_key,
-            prompt=full_prompt,
-            aspect_ratio=aspect_ratio,
-            image_size='1K',  # Default for MVP; can be '2K' or '4K' later
-            model=request.model or 'gemini-3-pro-image-preview'
-        )
-
-    # 7. Post-process: resize/crop to exact preset dimensions
-    # Gemini returns fixed resolutions per aspect_ratio/size combo,
-    # so we must resize/crop to match the exact preset dimensions.
-    image_bytes = resize_to_preset(image_bytes, target_width, target_height)
-
-    # 8. Apply watermark if requested
-    if request.logo_mode in ('watermark', 'both') and brand.logo_path:
-        logo_bytes = await storage.download(brand.logo_path)
-        image_bytes = apply_watermark(image_bytes, logo_bytes)
-
-    # 9. Store to Supabase Storage
     generation_id = uuid4()
-    image_path = f"brands/{brand_id}/generations/{generation_id}.png"
-    await storage.upload(image_path, image_bytes, content_type='image/png')
-
-    # 10. Insert record (store final dimensions after post-processing)
     generation = await db.insert(generations).values(
         id=generation_id,
         brand_id=brand_id,
-        prompt=request.prompt,  # Store original, not full
+        prompt=request.prompt,  # Store user prompt only
         provider=request.provider,
-        model=request.model,
+        model=request.model or default_model_for_provider(request.provider),
         platform_preset=request.platform_preset,
         width=target_width,
         height=target_height,
         logo_mode=request.logo_mode,
-        image_path=image_path
+        status='pending'
     ).returning()
+
+    try:
+        await db.update(generations).where(
+            generations.c.id == generation_id
+        ).values(status='processing')
+
+        # 5. Get brand kit
+        kit = await get_brand_kit(brand_id)
+
+        # 6. Build full prompt
+        prompt_parts = []
+        if kit and kit.summary:
+            prompt_parts.append(f"Brand Context:\n{kit.summary}")
+
+        if request.logo_mode in ('prompt', 'both') and brand.logo_path:
+            prompt_parts.append("Incorporate the brand logo naturally into the image.")
+
+        prompt_parts.append(f"Image Request:\n{request.prompt}")
+        full_prompt = "\n\n".join(prompt_parts)
+
+        api_key = await vault.get_secret(key.vault_secret_id)
+
+        # 7. Call provider
+        if request.provider == 'openai':
+            result = await openai_generate(
+                api_key=api_key,
+                prompt=full_prompt,
+                width=target_width,
+                height=target_height,
+                model=request.model or 'gpt-image-1'
+            )
+        else:
+            # Gemini requires aspect_ratio and image_size, not width/height.
+            aspect_ratio = PRESET_TO_ASPECT_RATIO[request.platform_preset]
+            result = await gemini_generate(
+                api_key=api_key,
+                prompt=full_prompt,
+                aspect_ratio=aspect_ratio,
+                image_size='1K',
+                model=request.model or 'gemini-3-pro-image-preview'
+            )
+
+        image_bytes = resize_to_preset(result.image_bytes, target_width, target_height)
+
+        # 8. Apply watermark if requested
+        if request.logo_mode in ('watermark', 'both') and brand.logo_path:
+            logo_bytes = await storage.download(brand.logo_path)
+            image_bytes = apply_watermark(image_bytes, logo_bytes)
+
+        # 9. Store output
+        image_path = f"brands/{brand_id}/generations/{generation_id}.png"
+        await storage.upload(image_path, image_bytes, content_type='image/png')
+
+        # 10. Mark succeeded
+        generation = await db.update(generations).where(
+            generations.c.id == generation_id
+        ).values(
+            status='succeeded',
+            image_path=image_path,
+            provider_request_id=result.request_id,
+            completed_at=datetime.now(timezone.utc)
+        ).returning()
+
+        await db.update(provider_keys).where(
+            provider_keys.c.id == key.id
+        ).values(last_used_at=datetime.now(timezone.utc))
+
+    except ProviderError as e:
+        generation = await db.update(generations).where(
+            generations.c.id == generation_id
+        ).values(
+            status='failed',
+            error_code=e.code,
+            error_message=str(e)[:1000],
+            completed_at=datetime.now(timezone.utc)
+        ).returning()
+        raise HTTPException(502, f"{request.provider} generation failed")
 
     # 11. Return response
     return GenerationResponse(
@@ -664,8 +856,11 @@ async def generate_image(
         width=generation.width,
         height=generation.height,
         logo_mode=generation.logo_mode,
-        image_url=storage.get_public_url(image_path),
-        created_at=generation.created_at
+        status=generation.status,
+        image_url=storage.get_public_url(generation.image_path),
+        error_code=generation.error_code,
+        created_at=generation.created_at,
+        completed_at=generation.completed_at
     )
 ```
 
@@ -674,13 +869,20 @@ async def generate_image(
 #### OpenAI (gpt-image-1)
 
 ```python
+from dataclasses import dataclass
+
+@dataclass
+class ProviderResult:
+    image_bytes: bytes
+    request_id: str | None
+
 async def openai_generate(
     api_key: str,
     prompt: str,
     width: int,
     height: int,
     model: str = 'gpt-image-1'
-) -> bytes:
+) -> ProviderResult:
     """Generate image using OpenAI API."""
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -697,7 +899,10 @@ async def openai_generate(
         )
         response.raise_for_status()
         data = response.json()
-        return base64.b64decode(data['data'][0]['b64_json'])
+        return ProviderResult(
+            image_bytes=base64.b64decode(data['data'][0]['b64_json']),
+            request_id=response.headers.get('x-request-id')
+        )
 ```
 
 #### Gemini (Nano Banana Pro) via Google Gen AI SDK
@@ -723,7 +928,7 @@ async def gemini_generate(
     aspect_ratio: str,
     image_size: str = '1K',
     model: str = 'gemini-3-pro-image-preview'
-) -> bytes:
+) -> ProviderResult:
     """
     Generate image using Gemini API via Google Gen AI SDK.
 
@@ -735,7 +940,7 @@ async def gemini_generate(
         model: Model ID (default 'gemini-3-pro-image-preview')
 
     Returns:
-        PNG image bytes
+        ProviderResult with PNG bytes and provider request id
     """
     client = genai.Client(api_key=api_key)
 
@@ -755,7 +960,10 @@ async def gemini_generate(
     # Response structure: response.candidates[0].content.parts[0].inline_data
     for part in response.candidates[0].content.parts:
         if hasattr(part, 'inline_data') and part.inline_data:
-            return base64.b64decode(part.inline_data.data)
+            return ProviderResult(
+                image_bytes=base64.b64decode(part.inline_data.data),
+                request_id=getattr(response, 'response_id', None)
+            )
 
     raise ValueError("No image data in Gemini response")
 ```
@@ -880,8 +1088,9 @@ async def delete_generation(
     if not generation:
         raise HTTPException(404, "Generation not found")
 
-    # 1. Delete from storage
-    await storage.delete(generation.image_path)
+    # 1. Delete from storage if this generation produced an image
+    if generation.image_path:
+        await storage.delete(generation.image_path)
 
     # 2. Delete DB row
     await db.delete(generations).where(generations.c.id == generation_id)
@@ -900,10 +1109,13 @@ async def delete_brand(
     if not brand:
         raise HTTPException(404, "Brand not found")
 
-    # 1. Get all generation paths
+    # 1. Get all generation paths (succeeded rows only)
     generations = await db.select(
         generations.c.image_path
-    ).where(generations.c.brand_id == brand_id)
+    ).where(
+        generations.c.brand_id == brand_id,
+        generations.c.image_path.is_not(None)
+    )
 
     # 2. Delete all generation images from storage
     for gen in generations:
@@ -1054,16 +1266,18 @@ frontend/
 |------|-------------|
 | 1.1 | Create repo structure (`frontend/`, `backend/`, `supabase/`) |
 | 1.2 | Initialize Supabase project |
-| 1.3 | Create database schema (all 4 tables) |
-| 1.4 | Add RLS policies |
-| 1.5 | Create storage bucket `brand-assets` |
-| 1.6 | Initialize FastAPI project with dependencies |
-| 1.7 | Add auth middleware (JWT verification) |
-| 1.8 | Add health endpoint |
-| 1.9 | Initialize Next.js 14 project |
-| 1.10 | Configure Supabase auth |
-| 1.11 | Add auth pages (login, signup) |
-| 1.12 | Add protected route middleware |
+| 1.3 | Create DB extensions, enum types, helper functions |
+| 1.4 | Create database schema (all 4 tables) |
+| 1.5 | Add constraints and indexes (including partial unique for active keys) |
+| 1.6 | Add `updated_at` triggers |
+| 1.7 | Add RLS policies (`ENABLE` + `FORCE`) |
+| 1.8 | Create storage bucket `brand-assets` |
+| 1.9 | Initialize FastAPI project with dependencies |
+| 1.10 | Add auth middleware (JWT verification) |
+| 1.11 | Add health endpoint |
+| 1.12 | Initialize Next.js 14 project |
+| 1.13 | Configure Supabase auth |
+| 1.14 | Add auth pages + protected route middleware |
 
 **Checkpoint**: Both services run locally, auth works end-to-end.
 
@@ -1091,13 +1305,14 @@ frontend/
 |------|-------------|
 | 3.1 | API: List keys endpoint |
 | 3.2 | API: Add key endpoint (Vault integration) |
-| 3.3 | API: Validate key endpoint (OpenAI) |
-| 3.4 | API: Validate key endpoint (Gemini) |
-| 3.5 | API: Delete key endpoint (Vault + DB) |
-| 3.6 | UI: Keys page with tabs |
-| 3.7 | UI: Add key modal |
-| 3.8 | UI: Key card with validate button |
-| 3.9 | UI: Validation status display |
+| 3.3 | API: Activate key endpoint (deactivate old active key atomically) |
+| 3.4 | API: Validate key endpoint (OpenAI) |
+| 3.5 | API: Validate key endpoint (Gemini) |
+| 3.6 | API: Delete key endpoint (Vault + DB) |
+| 3.7 | UI: Keys page with tabs |
+| 3.8 | UI: Add key modal |
+| 3.9 | UI: Key card with validate button + activate action |
+| 3.10 | UI: Validation + active status display |
 
 **Checkpoint**: User can add, validate, and delete API keys. Keys never exposed to client.
 
@@ -1125,17 +1340,19 @@ frontend/
 | Task | Description |
 |------|-------------|
 | 5.1 | API: Generation pipeline skeleton |
-| 5.2 | API: OpenAI integration |
-| 5.3 | API: Gemini integration (with aspect_ratio mapping) |
-| 5.4 | API: Post-processing resize/crop logic |
-| 5.5 | API: Logo watermark logic |
-| 5.6 | API: Generate endpoint |
-| 5.7 | UI: Generator form |
-| 5.8 | UI: Preset selector (grouped by platform) |
-| 5.9 | UI: Provider/model selector |
-| 5.10 | UI: Logo mode selector |
-| 5.11 | UI: Result preview |
-| 5.12 | UI: Download button |
+| 5.2 | API: Insert `pending` generation rows and transition status lifecycle |
+| 5.3 | API: OpenAI integration |
+| 5.4 | API: Gemini integration (with aspect_ratio mapping) |
+| 5.5 | API: Post-processing resize/crop logic |
+| 5.6 | API: Logo watermark logic |
+| 5.7 | API: Generate endpoint |
+| 5.8 | API: Provider failure capture (`error_code`, `error_message`) |
+| 5.9 | UI: Generator form |
+| 5.10 | UI: Preset selector (grouped by platform) |
+| 5.11 | UI: Provider/model selector |
+| 5.12 | UI: Logo mode selector |
+| 5.13 | UI: Result preview |
+| 5.14 | UI: Download button |
 
 **Checkpoint**: User can generate images with both providers, all presets, all logo modes.
 
@@ -1143,7 +1360,7 @@ frontend/
 
 | Task | Description |
 |------|-------------|
-| 6.1 | API: List generations endpoint (pagination, filter) |
+| 6.1 | API: List generations endpoint (pagination, provider/status filters) |
 | 6.2 | API: Get generation endpoint |
 | 6.3 | API: Delete generation endpoint (hard delete) |
 | 6.4 | UI: History list page |
@@ -1220,7 +1437,20 @@ PORT=8000
 - [ ] Works with OpenAI provider
 - [ ] Works with Gemini provider
 - [ ] RLS policies tested (query as different user fails)
+- [ ] Generation lifecycle tested (`pending` → `processing` → `succeeded|failed`)
 - [ ] Hard delete verified (DB rows AND storage assets removed)
+
+### Data Integrity Verification
+
+- [ ] `provider_keys`: max one active key per `(brand_id, provider)`
+- [ ] `brand_kits`: `complete` status cannot be saved without required fields
+- [ ] `generations`: `succeeded` rows require `image_path`, failed rows require `error_code`
+- [ ] `updated_at` trigger updates timestamps on every row update
+- [ ] Indexes support hottest queries:
+  - [ ] Brands by owner
+  - [ ] Active provider key lookup by brand/provider
+  - [ ] Generation history by brand and created date
+  - [ ] Generation filters by provider/status
 
 ### Security Verification
 
@@ -1317,11 +1547,14 @@ frontend/
 ```
 supabase/
 ├── migrations/
-│   ├── 00001_create_brands.sql
-│   ├── 00002_create_brand_kits.sql
-│   ├── 00003_create_provider_keys.sql
-│   ├── 00004_create_generations.sql
-│   └── 00005_add_rls_policies.sql
+│   ├── 00001_extensions_types_helpers.sql
+│   ├── 00002_create_brands.sql
+│   ├── 00003_create_brand_kits.sql
+│   ├── 00004_create_provider_keys.sql
+│   ├── 00005_create_generations.sql
+│   ├── 00006_add_indexes.sql
+│   ├── 00007_add_updated_at_triggers.sql
+│   └── 00008_add_rls_policies.sql
 ├── seed.sql                        # (optional test data)
 └── config.toml
 ```
