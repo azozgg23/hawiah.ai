@@ -1,6 +1,6 @@
 # Basar AI - Implementation Plan
 
-**Version**: 1.1.0
+**Version**: 1.4.0
 **Date**: 2026-02-08
 **Status**: Approved
 **Constitution**: v1.0.0
@@ -20,9 +20,10 @@
 9. [Hard Delete Implementation](#hard-delete-implementation)
 10. [Frontend Structure](#frontend-structure)
 11. [Build Order](#build-order)
-12. [Environment Variables](#environment-variables)
-13. [Verification Checklist](#verification-checklist)
-14. [Files to Create](#files-to-create)
+12. [Dockerization](#dockerization)
+13. [Environment Variables](#environment-variables)
+14. [Verification Checklist](#verification-checklist)
+15. [Files to Create](#files-to-create)
 
 ---
 
@@ -53,7 +54,7 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
 | Provider keys | Key rotation with single active key per provider | Allows safe rotation without downtime |
 | Generation lifecycle | `pending`/`processing`/`succeeded`/`failed` statuses | Preserves failure history and supports retries/ops visibility |
 | Admin | Operator-only (email allowlist) | Users manage their brands; operator monitors system |
-| AI Models | OpenAI `gpt-image-1` + Gemini `gemini-3-pro-image-preview` | Latest image generation models |
+| AI Models | OpenAI `gpt-image-1.5` + Gemini `gemini-3-pro-image-preview` | Latest image generation models |
 | Summary derivation | Template concatenation | Deterministic, fast, no extra API costs |
 | History actions | View + Delete only | MVP scope; no prompt reuse |
 
@@ -63,23 +64,23 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Bunny Magic Containers                    │
+│                Bunny Magic Container (Single Image)             │
 ├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐         ┌─────────────────────────────────┐│
-│  │   Next.js 14    │  HTTP   │          FastAPI               ││
-│  │   (frontend)    │ ──────► │          (backend)             ││
-│  │                 │         │                                 ││
-│  │  - Auth UI      │         │  - Brand CRUD                  ││
-│  │  - Brand Kit    │         │  - Brand Kit                   ││
-│  │  - Generator    │         │  - Key Management              ││
-│  │  - History      │         │  - Generation Pipeline         ││
-│  │  - Admin        │         │  - History                     ││
-│  └─────────────────┘         │  - Admin                       ││
-│         │                    └──────────────┬──────────────────┘│
-│         │                                   │                   │
-└─────────┼───────────────────────────────────┼───────────────────┘
-          │                                   │
-          ▼                                   ▼
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ Process Supervisor / Entrypoint                          │  │
+│  │  - Starts FastAPI (internal :8000)                       │  │
+│  │  - Starts Next.js (public :3000)                         │  │
+│  │  - Handles shutdown/signals for both processes            │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                     │                          │                │
+│                     ▼                          ▼                │
+│               ┌───────────────┐        ┌───────────────┐       │
+│               │   Next.js 14  │        │    FastAPI    │       │
+│               │   (frontend)  │ ─────► │   (backend)   │       │
+│               └───────────────┘        └───────────────┘       │
+└─────────────────────────────────────────────────────────────────┘
+                     │
+                     ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                          Supabase                                │
 ├─────────────────┬─────────────────┬──────────────┬──────────────┤
@@ -90,7 +91,7 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
                                    ▼
                     ┌──────────────────────────┐
                     │    Provider APIs         │
-                    │  - OpenAI (gpt-image-1)  │
+                    │  - OpenAI (gpt-image-1.5)│
                     │  - Gemini API            │
                     │    (gemini-3-pro-image-  │
                     │     preview)             │
@@ -107,7 +108,7 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
 | Database | Supabase PostgreSQL |
 | Secrets | Supabase Vault |
 | Storage | Supabase Storage |
-| Hosting | Bunny Magic Containers |
+| Hosting | Bunny Magic Container (single image) |
 | Providers | OpenAI, Google Gemini API |
 
 ---
@@ -672,7 +673,7 @@ Authorization: Bearer <supabase_access_token>
 {
   "prompt": "A modern office space with natural lighting",
   "provider": "openai",
-  "model": "gpt-image-1",
+  "model": "gpt-image-1.5",
   "platform_preset": "instagram_post",
   "logo_mode": "watermark"
 }
@@ -684,7 +685,7 @@ Authorization: Bearer <supabase_access_token>
   "id": "uuid",
   "prompt": "A modern office space with natural lighting",
   "provider": "openai",
-  "model": "gpt-image-1",
+  "model": "gpt-image-1.5",
   "platform_preset": "instagram_post",
   "width": 1080,
   "height": 1080,
@@ -797,7 +798,7 @@ async def generate_image(
                 prompt=full_prompt,
                 width=target_width,
                 height=target_height,
-                model=request.model or 'gpt-image-1'
+                model=request.model or 'gpt-image-1.5'
             )
         else:
             # Gemini requires aspect_ratio and image_size, not width/height.
@@ -866,7 +867,7 @@ async def generate_image(
 
 ### Provider Integration
 
-#### OpenAI (gpt-image-1)
+#### OpenAI (gpt-image-1.5)
 
 ```python
 from dataclasses import dataclass
@@ -881,7 +882,7 @@ async def openai_generate(
     prompt: str,
     width: int,
     height: int,
-    model: str = 'gpt-image-1'
+    model: str = 'gpt-image-1.5'
 ) -> ProviderResult:
     """Generate image using OpenAI API."""
     async with httpx.AsyncClient() as client:
@@ -1281,110 +1282,145 @@ frontend/
 
 **Checkpoint**: Both services run locally, auth works end-to-end.
 
-### Phase 2: Brand CRUD
+### Phase 2: Dockerization
 
 | Task | Description |
 |------|-------------|
-| 2.1 | API: List brands endpoint |
-| 2.2 | API: Create brand endpoint |
-| 2.3 | API: Get brand endpoint |
-| 2.4 | API: Delete brand endpoint (with hard delete) |
-| 2.5 | API: Logo upload endpoint |
-| 2.6 | API: Logo delete endpoint |
-| 2.7 | UI: Brand list page |
-| 2.8 | UI: Create brand modal |
-| 2.9 | UI: Brand selector in nav |
-| 2.10 | UI: Brand settings page |
-| 2.11 | UI: Delete brand confirmation (type name) |
+| 2.1 | Create root `Dockerfile` to build frontend + backend into one runtime image |
+| 2.2 | Add root `.dockerignore` (optimize build context) |
+| 2.3 | Add container entrypoint script to start FastAPI + Next.js and handle signals |
+| 2.4 | Wire internal networking (`NEXT_PUBLIC_API_URL`/server-side API base to `http://127.0.0.1:8000`) |
+| 2.5 | Expose one public port (Next.js) and keep backend internal-only |
+| 2.6 | Add healthcheck strategy for both processes (readiness check via exposed app route + backend health route) |
+| 2.7 | Validate single-image run locally (`docker build` + `docker run`) with auth + API health |
+| 2.8 | Document Bunny Magic deployment runbook in `docs/docker.md` |
+
+**Checkpoint**: One container image runs the full app (frontend + backend) reproducibly.
+
+### Phase 3: Brand CRUD
+
+| Task | Description |
+|------|-------------|
+| 3.1 | API: List brands endpoint |
+| 3.2 | API: Create brand endpoint |
+| 3.3 | API: Get brand endpoint |
+| 3.4 | API: Delete brand endpoint (with hard delete) |
+| 3.5 | API: Logo upload endpoint |
+| 3.6 | API: Logo delete endpoint |
+| 3.7 | UI: Brand list page |
+| 3.8 | UI: Create brand modal |
+| 3.9 | UI: Brand selector in nav |
+| 3.10 | UI: Brand settings page |
+| 3.11 | UI: Delete brand confirmation (type name) |
 
 **Checkpoint**: User can create, view, and delete brands. Hard delete verified.
 
-### Phase 3: Provider Keys
+### Phase 4: Provider Keys
 
 | Task | Description |
 |------|-------------|
-| 3.1 | API: List keys endpoint |
-| 3.2 | API: Add key endpoint (Vault integration) |
-| 3.3 | API: Activate key endpoint (deactivate old active key atomically) |
-| 3.4 | API: Validate key endpoint (OpenAI) |
-| 3.5 | API: Validate key endpoint (Gemini) |
-| 3.6 | API: Delete key endpoint (Vault + DB) |
-| 3.7 | UI: Keys page with tabs |
-| 3.8 | UI: Add key modal |
-| 3.9 | UI: Key card with validate button + activate action |
-| 3.10 | UI: Validation + active status display |
+| 4.1 | API: List keys endpoint |
+| 4.2 | API: Add key endpoint (Vault integration) |
+| 4.3 | API: Activate key endpoint (deactivate old active key atomically) |
+| 4.4 | API: Validate key endpoint (OpenAI) |
+| 4.5 | API: Validate key endpoint (Gemini) |
+| 4.6 | API: Delete key endpoint (Vault + DB) |
+| 4.7 | UI: Keys page with tabs |
+| 4.8 | UI: Add key modal |
+| 4.9 | UI: Key card with validate button + activate action |
+| 4.10 | UI: Validation + active status display |
 
 **Checkpoint**: User can add, validate, and delete API keys. Keys never exposed to client.
 
-### Phase 4: Brand Kit
+### Phase 5: Brand Kit
 
 | Task | Description |
 |------|-------------|
-| 4.1 | API: Get kit endpoint |
-| 4.2 | API: Upsert kit endpoint |
-| 4.3 | API: Summary derivation logic |
-| 4.4 | UI: Wizard container |
-| 4.5 | UI: Step 1 - Name |
-| 4.6 | UI: Step 2 - Tagline |
-| 4.7 | UI: Step 3 - Tone |
-| 4.8 | UI: Step 4 - Audience |
-| 4.9 | UI: Step 5 - Colors |
-| 4.10 | UI: Step 6 - Avoid words |
-| 4.11 | UI: Completion summary |
-| 4.12 | UI: Status badge in nav |
+| 5.1 | API: Get kit endpoint |
+| 5.2 | API: Upsert kit endpoint |
+| 5.3 | API: Summary derivation logic |
+| 5.4 | UI: Wizard container |
+| 5.5 | UI: Step 1 - Name |
+| 5.6 | UI: Step 2 - Tagline |
+| 5.7 | UI: Step 3 - Tone |
+| 5.8 | UI: Step 4 - Audience |
+| 5.9 | UI: Step 5 - Colors |
+| 5.10 | UI: Step 6 - Avoid words |
+| 5.11 | UI: Completion summary |
+| 5.12 | UI: Status badge in nav |
 
 **Checkpoint**: User can complete brand kit interview. Works with 0 answers and complete kit.
 
-### Phase 5: Generation
+### Phase 6: Generation
 
 | Task | Description |
 |------|-------------|
-| 5.1 | API: Generation pipeline skeleton |
-| 5.2 | API: Insert `pending` generation rows and transition status lifecycle |
-| 5.3 | API: OpenAI integration |
-| 5.4 | API: Gemini integration (with aspect_ratio mapping) |
-| 5.5 | API: Post-processing resize/crop logic |
-| 5.6 | API: Logo watermark logic |
-| 5.7 | API: Generate endpoint |
-| 5.8 | API: Provider failure capture (`error_code`, `error_message`) |
-| 5.9 | UI: Generator form |
-| 5.10 | UI: Preset selector (grouped by platform) |
-| 5.11 | UI: Provider/model selector |
-| 5.12 | UI: Logo mode selector |
-| 5.13 | UI: Result preview |
-| 5.14 | UI: Download button |
+| 6.1 | API: Generation pipeline skeleton |
+| 6.2 | API: Insert `pending` generation rows and transition status lifecycle |
+| 6.3 | API: OpenAI integration |
+| 6.4 | API: Gemini integration (with aspect_ratio mapping) |
+| 6.5 | API: Post-processing resize/crop logic |
+| 6.6 | API: Logo watermark logic |
+| 6.7 | API: Generate endpoint |
+| 6.8 | API: Provider failure capture (`error_code`, `error_message`) |
+| 6.9 | UI: Generator form |
+| 6.10 | UI: Preset selector (grouped by platform) |
+| 6.11 | UI: Provider/model selector |
+| 6.12 | UI: Logo mode selector |
+| 6.13 | UI: Result preview |
+| 6.14 | UI: Download button |
 
 **Checkpoint**: User can generate images with both providers, all presets, all logo modes.
 
-### Phase 6: History
+### Phase 7: History
 
 | Task | Description |
 |------|-------------|
-| 6.1 | API: List generations endpoint (pagination, provider/status filters) |
-| 6.2 | API: Get generation endpoint |
-| 6.3 | API: Delete generation endpoint (hard delete) |
-| 6.4 | UI: History list page |
-| 6.5 | UI: History card component |
-| 6.6 | UI: Full image modal |
-| 6.7 | UI: Delete confirmation |
-| 6.8 | UI: Provider filter |
+| 7.1 | API: List generations endpoint (pagination, provider/status filters) |
+| 7.2 | API: Get generation endpoint |
+| 7.3 | API: Delete generation endpoint (hard delete) |
+| 7.4 | UI: History list page |
+| 7.5 | UI: History card component |
+| 7.6 | UI: Full image modal |
+| 7.7 | UI: Delete confirmation |
+| 7.8 | UI: Provider filter |
 
 **Checkpoint**: User can view and delete history. Hard delete verified.
 
-### Phase 7: Admin + Polish
+### Phase 8: Admin + Polish
 
 | Task | Description |
 |------|-------------|
-| 7.1 | API: Admin brands endpoint |
-| 7.2 | API: Admin stats endpoint |
-| 7.3 | API: Admin gate (email allowlist) |
-| 7.4 | UI: Admin page |
-| 7.5 | Error handling polish |
-| 7.6 | Loading states |
-| 7.7 | Empty states |
-| 7.8 | Definition of Done verification |
+| 8.1 | API: Admin brands endpoint |
+| 8.2 | API: Admin stats endpoint |
+| 8.3 | API: Admin gate (email allowlist) |
+| 8.4 | UI: Admin page |
+| 8.5 | Error handling polish |
+| 8.6 | Loading states |
+| 8.7 | Empty states |
+| 8.8 | Definition of Done verification |
 
 **Checkpoint**: All features complete. Definition of Done verified.
+
+---
+
+## Dockerization
+
+### Deliverables
+
+- `Dockerfile` (single deployable image for Bunny Magic)
+- `.dockerignore`
+- `scripts/container-entrypoint.sh`
+- `docs/docker.md`
+
+### Container Requirements
+
+- Use pinned base image tags and multi-stage build.
+- Run as non-root user in runtime stage.
+- Keep a single public port (Next.js); FastAPI listens internally only.
+- Start/stop both processes cleanly from one entrypoint.
+- Include healthchecks that verify both frontend and backend.
+- Keep secrets in env files or host environment; do not bake secrets into images.
 
 ---
 
@@ -1397,8 +1433,11 @@ frontend/
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 
-# Backend API
-NEXT_PUBLIC_API_URL=http://localhost:8000
+# Browser -> Next.js (same-origin API route/rewrite)
+NEXT_PUBLIC_API_URL=/api
+
+# Next.js server -> internal FastAPI inside same container
+NEXT_SERVER_API_URL=http://127.0.0.1:8000
 ```
 
 ### Backend (`backend/.env`)
@@ -1416,7 +1455,7 @@ STORAGE_BUCKET=brand-assets
 ADMIN_EMAILS=admin@example.com,admin2@example.com
 
 # Server
-HOST=0.0.0.0
+HOST=127.0.0.1
 PORT=8000
 ```
 
@@ -1518,7 +1557,6 @@ backend/
 │   │   └── watermark.py
 │   └── presets.py                  # Platform presets + aspect ratio mapping
 ├── requirements.txt
-├── Dockerfile
 └── .env.example
 ```
 
@@ -1538,8 +1576,7 @@ frontend/
 ├── tailwind.config.ts
 ├── next.config.js
 ├── middleware.ts
-├── .env.local.example
-└── Dockerfile
+└── .env.local.example
 ```
 
 ### Supabase (`supabase/`)
@@ -1559,6 +1596,18 @@ supabase/
 └── config.toml
 ```
 
+### Root (`/`)
+
+```
+/
+├── Dockerfile
+├── .dockerignore
+├── scripts/
+│   └── container-entrypoint.sh
+└── docs/
+    └── docker.md
+```
+
 ---
 
 ## Appendix: Model Reference
@@ -1567,8 +1616,8 @@ supabase/
 
 | Model | Description |
 |-------|-------------|
-| `gpt-image-1` | Latest image generation model (default) |
-| `dall-e-3` | Previous generation (fallback) |
+| `gpt-image-1.5` | Latest image generation model (default) |
+| `gpt-image-1` | Previous generation (fallback) |
 
 ### Gemini Image Models
 
