@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 from uuid import uuid4
 from fastapi import Depends, HTTPException, status
@@ -7,6 +8,8 @@ import jwt
 from jwt import PyJWTError
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 security = HTTPBearer(auto_error=False)
@@ -54,18 +57,19 @@ def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depen
 
         return User(id=user_id, email=email, access_token=credentials.credentials)
 
-    except PyJWTError as e:
+    except PyJWTError:
+        logger.exception("JWT decode failed")
         raise _auth_error(
             status.HTTP_401_UNAUTHORIZED,
             "INVALID_TOKEN",
-            f"Invalid token: {str(e)}",
+            "Invalid authentication token",
         )
 
 
 def get_current_admin_user(user: User = Depends(get_current_user)) -> User:
-    admin_emails = settings.ADMIN_EMAILS.split(",") if settings.ADMIN_EMAILS else []
+    admin_emails = [e.strip().lower() for e in settings.ADMIN_EMAILS.split(",") if e.strip()] if settings.ADMIN_EMAILS else []
 
-    if user.email not in admin_emails:
+    if user.email.lower() not in admin_emails:
         raise _auth_error(
             status.HTTP_403_FORBIDDEN,
             "FORBIDDEN",

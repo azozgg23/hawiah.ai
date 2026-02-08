@@ -70,7 +70,7 @@
 - [X] T022 [P] Create `frontend/lib/supabase/server.ts`: export async createClient() using createServerClient from @supabase/ssr with cookies() getAll/setAll pattern per research.md
 - [X] T023 [P] Create `frontend/lib/api.ts`: fetch wrapper for backend API calls. In client components, obtain the access token via `supabase.auth.getSession()` and pass it as `Authorization: Bearer <token>` header to /api/* endpoints. Handle 401 responses by calling `supabase.auth.signOut()` and redirecting to /login via `window.location.href`
 - [X] T024 [P] Create `frontend/types/index.ts`: TypeScript type definitions for Profile (user_id, email, full_name, avatar_url, created_at, updated_at), UpdateProfileRequest (full_name?, avatar_url?), ErrorResponse (error.code, error.message, error.request_id) per contracts/api.yaml
-- [X] T025 Configure `frontend/next.config.js`: add rewrites() rule proxying /api/:path* to http://127.0.0.1:8000/:path* per research.md
+- [X] T025 Configure `frontend/next.config.mjs`: add rewrites() rule proxying `/api/:path*` to `http://127.0.0.1:8000/:path*` per research.md
 
 **Checkpoint**: Foundation ready — database schema applied, backend framework running with CORS and auth middleware, frontend framework initialized with Supabase clients and API proxy. User story implementation can now begin.
 

@@ -33,5 +33,13 @@ export async function apiRequest<T = any>(
     throw new Error(error.error?.message || 'API request failed')
   }
 
+  if (
+    response.status === 204 ||
+    response.headers.get('content-length') === '0' ||
+    !response.headers.get('content-type')?.includes('application/json')
+  ) {
+    return null as T
+  }
+
   return response.json()
 }
