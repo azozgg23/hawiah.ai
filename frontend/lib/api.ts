@@ -1,16 +1,16 @@
 import { createClient } from './supabase/client'
 import { ErrorResponse } from '../types'
 
-export async function apiRequest<T = any>(
+export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...(options.headers as Record<string, string>),
   }
 
   if (session?.access_token) {

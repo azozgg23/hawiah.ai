@@ -1,10 +1,9 @@
 from contextlib import asynccontextmanager
-from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-# from app.routers import health, me  # TODO: Uncomment when routers are created in Phase 4
+from app.routers import health, me
 
 
 @asynccontextmanager
@@ -27,9 +26,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# TODO: Uncomment when routers are created in Phase 4
-# app.include_router(health.router, tags=["health"])
-# app.include_router(me.router, tags=["account"])
+app.include_router(health.router, tags=["health"])
+app.include_router(me.router, tags=["account"])
 
 
 @app.get("/")

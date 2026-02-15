@@ -84,15 +84,15 @@
 
 ### Implementation
 
-- [ ] T026 Create `frontend/middleware.ts`: auth middleware using createServerClient from @supabase/ssr that refreshes sessions via getUser() (NOT getSession()), redirects unauthenticated users from dashboard routes (/*) to /login, and redirects authenticated users from /login and /signup to /brands. Use matcher excluding _next/static, _next/image, favicon, and static assets per research.md
-- [ ] T027 [P] [US1] Create `frontend/app/layout.tsx`: root layout with HTML lang, body with globals.css and font configuration
-- [ ] T028 [P] [US1] Create `frontend/app/(auth)/layout.tsx`: auth layout without navigation, centered content wrapper for login/signup forms
-- [ ] T029 [US1] Create `frontend/app/(auth)/login/page.tsx`: client component login form with email and password fields using shadcn/ui Input, Button, Card components. Call supabase.auth.signInWithPassword(), show error messages, redirect to /brands on success via router.push() and router.refresh() per research.md. Include link to signup page
-- [ ] T030 [P] [US1] Create `frontend/app/(auth)/signup/page.tsx`: client component signup form with email and password fields. Call supabase.auth.signUp() with emailRedirectTo pointing to /auth/confirm. Show success message "Check your email to confirm your account". Include link to login page per research.md
-- [ ] T031 [US1] Create `frontend/app/auth/confirm/route.ts`: GET route handler that extracts token_hash and type from URL params, creates server Supabase client, calls verifyOtp({ type, token_hash }), and redirects to /brands on success or /login on error per research.md
-- [ ] T032 [US1] Create `frontend/app/(dashboard)/layout.tsx`: dashboard layout with navigation bar containing app name, account link, and logout button. Logout calls supabase.auth.signOut() and redirects to /login via router.push() and router.refresh()
-- [ ] T033 [US1] Create `frontend/app/page.tsx`: landing page that checks auth state via server Supabase client getUser() and redirects to /brands (authenticated) or /login (unauthenticated)
-- [ ] T034 [US4] Verify RLS data isolation by confirming migration 00008 policies are correctly defined: profiles uses user_id = auth.uid() for all operations, brand-scoped tables use is_brand_owner(brand_id). No additional code needed — RLS is enforced at database layer
+- [X] T026 Create `frontend/middleware.ts`: auth middleware using createServerClient from @supabase/ssr that refreshes sessions via getUser() (NOT getSession()), redirects unauthenticated users from dashboard routes (/*) to /login, and redirects authenticated users from /login and /signup to /brands. Use matcher excluding _next/static, _next/image, favicon, and static assets per research.md
+- [X] T027 [P] [US1] Create `frontend/app/layout.tsx`: root layout with HTML lang, body with globals.css and font configuration
+- [X] T028 [P] [US1] Create `frontend/app/(auth)/layout.tsx`: auth layout without navigation, centered content wrapper for login/signup forms
+- [X] T029 [US1] Create `frontend/app/(auth)/login/page.tsx`: client component login form with email and password fields using shadcn/ui Input, Button, Card components. Call supabase.auth.signInWithPassword(), show error messages, redirect to /brands on success via router.push() and router.refresh() per research.md. Include link to signup page
+- [X] T030 [P] [US1] Create `frontend/app/(auth)/signup/page.tsx`: client component signup form with email and password fields. Call supabase.auth.signUp() with emailRedirectTo pointing to /auth/confirm. Show success message "Check your email to confirm your account". Include link to login page per research.md
+- [X] T031 [US1] Create `frontend/app/auth/confirm/route.ts`: GET route handler that extracts token_hash and type from URL params, creates server Supabase client, calls verifyOtp({ type, token_hash }), and redirects to /brands on success or /login on error per research.md
+- [X] T032 [US1] Create `frontend/app/(dashboard)/layout.tsx`: dashboard layout with navigation bar containing app name, account link, and logout button. Logout calls supabase.auth.signOut() and redirects to /login via router.push() and router.refresh()
+- [X] T033 [US1] Create `frontend/app/page.tsx`: landing page that checks auth state via server Supabase client getUser() and redirects to /brands (authenticated) or /login (unauthenticated)
+- [X] T034 [US4] Verify RLS data isolation by confirming migration 00008 policies are correctly defined: profiles uses user_id = auth.uid() for all operations, brand-scoped tables use is_brand_owner(brand_id). No additional code needed — RLS is enforced at database layer
 
 **Checkpoint**: User Story 1 (Sign Up/Login) and User Story 4 (Data Isolation) are complete. Users can register, verify email, log in, access the dashboard, and log out. RLS prevents cross-user data access at the database layer.
 
@@ -106,16 +106,16 @@
 
 ### Backend Implementation
 
-- [ ] T035 [P] [US2] Create `backend/app/models/profile.py`: Pydantic models ProfileResponse (user_id, email, full_name, avatar_url, created_at, updated_at) and UpdateProfileRequest (optional full_name with min 2 / max 120 length, optional avatar_url with HttpUrl or regex ^https?://.+ validation) per contracts/api.yaml
-- [ ] T036 [US3] Create `backend/app/routers/health.py`: GET /health endpoint returning {"status": "healthy", "timestamp": "..."} with no auth required per contracts/api.yaml. Note: built here alongside US2 backend setup for efficiency; serves US3 (System Health Verification)
-- [ ] T037 [US2] Create `backend/app/routers/me.py`: GET /me endpoint using get_current_user dependency, querying profiles table via service client filtered by current_user.id. Email comes from the JWT claims (current_user.email already extracted in auth.py) — do NOT join auth.users table. PATCH /me endpoint validating UpdateProfileRequest body, updating profiles row, returning updated ProfileResponse. Return error format {"error": {"code": "...", "message": "...", "request_id": "..."}} for validation failures per contracts/api.yaml
-- [ ] T038 [US2] Register health and me routers in `backend/app/main.py`: include health.router (no prefix, tags=["health"]) and me.router (no prefix, tags=["account"]). Important: FastAPI routers must NOT use a /api prefix — the Next.js rewrite in next.config.js strips /api/ and forwards to the backend root (e.g., browser calls /api/me → FastAPI receives /me)
+- [X] T035 [P] [US2] Create `backend/app/models/profile.py`: Pydantic models ProfileResponse (user_id, email, full_name, avatar_url, created_at, updated_at) and UpdateProfileRequest (optional full_name with min 2 / max 120 length, optional avatar_url with HttpUrl or regex ^https?://.+ validation) per contracts/api.yaml
+- [X] T036 [US3] Create `backend/app/routers/health.py`: GET /health endpoint returning {"status": "healthy", "timestamp": "..."} with no auth required per contracts/api.yaml. Note: built here alongside US2 backend setup for efficiency; serves US3 (System Health Verification)
+- [X] T037 [US2] Create `backend/app/routers/me.py`: GET /me endpoint using get_current_user dependency, querying profiles table via service client filtered by current_user.id. Email comes from the JWT claims (current_user.email already extracted in auth.py) — do NOT join auth.users table. PATCH /me endpoint validating UpdateProfileRequest body, updating profiles row, returning updated ProfileResponse. Return error format {"error": {"code": "...", "message": "...", "request_id": "..."}} for validation failures per contracts/api.yaml
+- [X] T038 [US2] Register health and me routers in `backend/app/main.py`: include health.router (no prefix, tags=["health"]) and me.router (no prefix, tags=["account"]). Important: FastAPI routers must NOT use a /api prefix — the Next.js rewrite in next.config.js strips /api/ and forwards to the backend root (e.g., browser calls /api/me → FastAPI receives /me)
 
 ### Frontend Implementation
 
-- [ ] T039 [P] [US2] Create `frontend/hooks/use-profile.ts`: hook that fetches GET /api/me with auth token, returns profile data, loading state, and error state. Include mutate function for optimistic updates after PATCH
-- [ ] T040 [US2] Create `frontend/components/account/profile-form.tsx`: form component displaying email as read-only text, full_name and avatar_url as editable Input fields with validation (full_name 2-120 chars, avatar_url must be valid URL or empty). Submit calls PATCH /api/me. Show validation errors inline. Show success toast on save per spec.md acceptance scenarios
-- [ ] T041 [US2] Create `frontend/app/(dashboard)/account/page.tsx`: account settings page using profile-form component. Page title "Account Settings". Fetch profile data via use-profile hook
+- [X] T039 [P] [US2] Create `frontend/hooks/use-profile.ts`: hook that fetches GET /api/me with auth token, returns profile data, loading state, and error state. Include mutate function for optimistic updates after PATCH
+- [X] T040 [US2] Create `frontend/components/account/profile-form.tsx`: form component displaying email as read-only text, full_name and avatar_url as editable Input fields with validation (full_name 2-120 chars, avatar_url must be valid URL or empty). Submit calls PATCH /api/me. Show validation errors inline. Show success toast on save per spec.md acceptance scenarios
+- [X] T041 [US2] Create `frontend/app/(dashboard)/account/page.tsx`: account settings page using profile-form component. Page title "Account Settings". Fetch profile data via use-profile hook
 
 **Checkpoint**: User Story 2 (Profile Management) is complete. Users can view and edit their profile. Validation is enforced both client-side and server-side. Backend health endpoint is also operational.
 
@@ -129,7 +129,7 @@
 
 ### Implementation
 
-- [ ] T042 [US3] Verify health endpoint works end-to-end: start backend with `uvicorn app.main:app`, send GET /health request, confirm 200 response with healthy status and timestamp. This validates T036 and T038 are correctly implemented (health router was created in Phase 4 as part of backend setup for profile endpoints)
+- [X] T042 [US3] Verify health endpoint works end-to-end: start backend with `uvicorn app.main:app`, send GET /health request, confirm 200 response with healthy status and timestamp. This validates T036 and T038 are correctly implemented (health router was created in Phase 4 as part of backend setup for profile endpoints)
 
 **Checkpoint**: User Story 3 (Health Check) is complete. The health endpoint responds without authentication.
 
@@ -139,10 +139,10 @@
 
 **Purpose**: Final verification, cleanup, and edge case handling
 
-- [ ] T043 [P] Create `backend/tests/conftest.py` and `backend/tests/test_health.py`: basic pytest test that creates a FastAPI TestClient and verifies GET /health returns 200 with status "healthy"
-- [ ] T044 [P] Add error handling for duplicate email signup in `frontend/app/(auth)/signup/page.tsx`: detect "User already registered" error from Supabase and show user-friendly message suggesting login instead per spec.md edge cases
-- [ ] T045 [P] Add session expiry handling in `frontend/middleware.ts`: ensure middleware redirects to /login when getUser() returns no user (expired token) per spec.md edge cases
-- [ ] T046 Validate end-to-end flow per quickstart.md: start Supabase (local or remote), run migrations, start backend, start frontend, complete signup → email confirm → login → profile edit → logout → redirect cycle. Confirm both services communicate via API proxy
+- [X] T043 [P] Create `backend/tests/conftest.py` and `backend/tests/test_health.py`: basic pytest test that creates a FastAPI TestClient and verifies GET /health returns 200 with status "healthy"
+- [X] T044 [P] Add error handling for duplicate email signup in `frontend/app/(auth)/signup/page.tsx`: detect "User already registered" error from Supabase and show user-friendly message suggesting login instead per spec.md edge cases
+- [X] T045 [P] Add session expiry handling in `frontend/middleware.ts`: ensure middleware redirects to /login when getUser() returns no user (expired token) per spec.md edge cases
+- [X] T046 Validate end-to-end flow per quickstart.md: start Supabase (local or remote), run migrations, start backend, start frontend, complete signup → email confirm → login → profile edit → logout → redirect cycle. Confirm both services communicate via API proxy
 
 ---
 
