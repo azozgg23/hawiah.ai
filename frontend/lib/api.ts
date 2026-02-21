@@ -24,8 +24,10 @@ export async function apiRequest<T = unknown>(
   })
 
   if (response.status === 401) {
-    await supabase.auth.signOut()
-    window.location.href = '/login'
+    if (typeof window !== 'undefined') {
+      await supabase.auth.signOut()
+      window.location.href = '/login'
+    }
     throw new Error('Unauthorized')
   }
 
@@ -33,8 +35,13 @@ export async function apiRequest<T = unknown>(
     let message = 'API request failed'
     const contentType = response.headers.get('content-type') || ''
     if (contentType.includes('application/json')) {
-      const error: ErrorResponse = await response.json()
-      message = error.error?.message || message
+      try {
+        const text = await response.text()
+        const error = JSON.parse(text) as ErrorResponse
+        message = error.error?.message || message
+      } catch {
+        // JSON parse failed, use default message
+      }
     }
     throw new Error(message)
   }

@@ -40,7 +40,11 @@ export async function middleware(request: NextRequest) {
   if (user && (pathname === '/login' || pathname === '/signup')) {
     const url = request.nextUrl.clone()
     url.pathname = '/brands'
-    return NextResponse.redirect(url)
+    const redirectResponse = NextResponse.redirect(url)
+    supabaseResponse.headers.getSetCookie().forEach((cookie) => {
+      redirectResponse.headers.append('set-cookie', cookie)
+    })
+    return redirectResponse
   }
 
   // Protected routes: redirect unauthenticated users to /login
@@ -53,7 +57,11 @@ export async function middleware(request: NextRequest) {
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const redirectResponse = NextResponse.redirect(url)
+    supabaseResponse.headers.getSetCookie().forEach((cookie) => {
+      redirectResponse.headers.append('set-cookie', cookie)
+    })
+    return redirectResponse
   }
 
   return supabaseResponse
