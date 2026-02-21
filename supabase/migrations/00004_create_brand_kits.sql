@@ -28,10 +28,16 @@ ALTER TABLE brand_kits
     CHECK (all_hex_colors(colors)),
   ADD CONSTRAINT chk_brand_kits_status_complete_consistency
     CHECK (
-      status = 'complete' = (tone IS NOT NULL AND audience IS NOT NULL AND cardinality(colors) >= 1)
+      (status = 'complete' AND tone IS NOT NULL AND audience IS NOT NULL AND cardinality(colors) >= 1)
+      OR
+      (status != 'complete')
     ),
   ADD CONSTRAINT chk_brand_kits_completed_at_consistency
-    CHECK (completed_at IS NULL = (status != 'complete'));
+    CHECK (
+      (status = 'complete' AND completed_at IS NOT NULL)
+      OR
+      (status != 'complete' AND completed_at IS NULL)
+    );
 
 -- Add comments
 COMMENT ON TABLE brand_kits IS 'Brand identity questionnaire answers - one-to-one with brands';

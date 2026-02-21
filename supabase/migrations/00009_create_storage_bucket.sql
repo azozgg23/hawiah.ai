@@ -73,10 +73,3 @@ CREATE POLICY "Authenticated Delete" ON storage.objects
       WHERE id = (storage.foldername(name))[2]::UUID
     )
   );
-
--- Add comments
-COMMENT ON TABLE storage.objects IS 'Storage objects with RLS policies for brand-assets bucket';
-COMMENT ON POLICY "Public Read" ON storage.objects IS 'Anyone can read public brand assets';
-COMMENT ON POLICY "Authenticated Insert" ON storage.objects IS 'Authenticated users can insert into their own brand folders';
-COMMENT ON POLICY "Authenticated Update" ON storage.objects IS 'Authenticated users can update files in their own brand folders';
-COMMENT ON POLICY "Authenticated Delete" ON storage.objects IS 'Authenticated users can delete files in their own brand folders';

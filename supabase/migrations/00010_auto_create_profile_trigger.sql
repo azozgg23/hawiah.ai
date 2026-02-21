@@ -30,4 +30,3 @@ CREATE TRIGGER on_auth_user_created
 
 -- Add comments
 COMMENT ON FUNCTION handle_new_user() IS 'Auto-creates profile row when new user signs up via Supabase Auth';
-COMMENT ON TRIGGER on_auth_user_created ON auth.users IS 'Trigger to auto-create profile on user signup';
