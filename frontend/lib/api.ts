@@ -8,13 +8,14 @@ export async function apiRequest<T = unknown>(
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
+  const headers = new Headers(options.headers)
+
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json')
   }
 
   if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`
+    headers.set('Authorization', `Bearer ${session.access_token}`)
   }
 
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
@@ -29,8 +30,13 @@ export async function apiRequest<T = unknown>(
   }
 
   if (!response.ok) {
-    const error: ErrorResponse = await response.json()
-    throw new Error(error.error?.message || 'API request failed')
+    let message = 'API request failed'
+    const contentType = response.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+      const error: ErrorResponse = await response.json()
+      message = error.error?.message || message
+    }
+    throw new Error(message)
   }
 
   if (
