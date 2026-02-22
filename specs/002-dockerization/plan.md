@@ -85,7 +85,7 @@ specs/002-dockerization/
 
 Three-stage multi-stage build:
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │ Stage 1: frontend-builder                   │
 │ Base: node:20-slim                          │
@@ -123,7 +123,7 @@ Three-stage multi-stage build:
 
 ### Entrypoint Script Flow
 
-```
+```text
 1. Validate required env vars (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
    SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET)
    → Missing? Print descriptive error, exit 1
@@ -171,7 +171,7 @@ The `rewrites` configuration continues to work in standalone mode — the standa
 
 Excludes from build context:
 
-```
+```text
 .git
 .gitignore
 node_modules

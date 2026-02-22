@@ -35,7 +35,7 @@ RUN useradd --create-home appuser
 WORKDIR /app
 
 COPY --from=backend-builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
-COPY --from=backend-builder /usr/local/bin /usr/local/bin
+COPY --from=backend-builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
 
 COPY backend/app /app/backend/app
 

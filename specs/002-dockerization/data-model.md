@@ -59,7 +59,7 @@ These values are fixed inside the container and not user-configurable.
 
 ## State Diagram: Container Lifecycle
 
-```
+```text
 [Container Start]
        │
        ▼

@@ -3,13 +3,14 @@ SHELL := /bin/bash
 .PHONY: build up down logs restart shell health clean dev dev-backend dev-frontend lint test
 
 IMAGE_NAME ?= basarai
-CONTAINER_NAME ?= basarai
+CONTAINER_NAME ?= basarai-app
 PORT ?= 3000
 
 # Docker
 build:
-	@[ -n "$${NEXT_PUBLIC_SUPABASE_URL}" ] || { echo "ERROR: NEXT_PUBLIC_SUPABASE_URL is not set"; exit 1; }
-	@[ -n "$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" ] || { echo "ERROR: NEXT_PUBLIC_SUPABASE_ANON_KEY is not set"; exit 1; }
+	@source frontend/.env.local 2>/dev/null || true; \
+	[ -n "$${NEXT_PUBLIC_SUPABASE_URL}" ] || { echo "ERROR: NEXT_PUBLIC_SUPABASE_URL not set (check frontend/.env.local or shell env)"; exit 1; }; \
+	[ -n "$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" ] || { echo "ERROR: NEXT_PUBLIC_SUPABASE_ANON_KEY not set (check frontend/.env.local or shell env)"; exit 1; }; \
 	docker build \
 		--build-arg NEXT_PUBLIC_SUPABASE_URL=$${NEXT_PUBLIC_SUPABASE_URL} \
 		--build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=$${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
@@ -23,7 +24,8 @@ up: build
 		$(IMAGE_NAME):latest
 
 down:
-	docker stop $(CONTAINER_NAME) && docker rm $(CONTAINER_NAME)
+	-docker stop $(CONTAINER_NAME) 2>/dev/null
+	-docker rm $(CONTAINER_NAME) 2>/dev/null
 
 logs:
 	docker logs -f $(CONTAINER_NAME)
