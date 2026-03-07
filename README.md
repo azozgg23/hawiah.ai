@@ -35,7 +35,7 @@ cp frontend/.env.local.example frontend/.env.local
 
 Edit **`backend/.env`** — fill in all four Supabase values:
 
-```
+```bash
 SUPABASE_URL=https://xxxxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 SUPABASE_ANON_KEY=eyJ...
@@ -44,7 +44,7 @@ SUPABASE_JWT_SECRET=your-jwt-secret
 
 Edit **`frontend/.env.local`** — fill in URL and anon key:
 
-```
+```bash
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 ```

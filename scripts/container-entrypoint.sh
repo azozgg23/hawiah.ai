@@ -30,16 +30,19 @@ if [ -n "$MISSING_VARS" ]; then
     exit 1
 fi
 
-echo "Starting backend..."
+BACKEND_HOST="${HOST:-0.0.0.0}"
+BACKEND_PORT="${PORT:-8000}"
+
+echo "Starting backend on ${BACKEND_HOST}:${BACKEND_PORT}..."
 cd /app/backend
-uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+uvicorn app.main:app --host "$BACKEND_HOST" --port "$BACKEND_PORT" &
 BACKEND_PID=$!
 
 echo "Waiting for backend to be ready..."
 TIMEOUT=30
 ELAPSED=0
 while [ $ELAPSED -lt $TIMEOUT ]; do
-    if python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')" 2>/dev/null; then
+    if python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:${BACKEND_PORT}/health')" 2>/dev/null; then
         echo "Backend is ready."
         break
     fi

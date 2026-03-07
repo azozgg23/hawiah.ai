@@ -52,7 +52,7 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD python3 -c "import urllib.request,sys;r1=urllib.request.urlopen('http://localhost:8000/health');r2=urllib.request.urlopen('http://localhost:3000');sys.exit(0 if r1.status==200 and r2.status==200 else 1)"
+  CMD python3 -c "import os,urllib.request,sys;p=os.environ.get('PORT','8000');r1=urllib.request.urlopen(f'http://localhost:{p}/health');r2=urllib.request.urlopen('http://localhost:3000');sys.exit(0 if r1.status==200 and r2.status==200 else 1)"
 
 USER appuser
 
