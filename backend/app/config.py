@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     SUPABASE_JWT_SECRET: str
     STORAGE_BUCKET: str = "brand-assets"
     ADMIN_EMAILS: str = ""
-    HOST: str = "0.0.0.0"
+    HOST: str = "127.0.0.1"
     PORT: int = 8000
 
     model_config = SettingsConfigDict(

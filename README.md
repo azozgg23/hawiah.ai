@@ -4,7 +4,7 @@ Multi-brand social image generator. Built with Next.js 14, FastAPI, and Supabase
 
 ## Quick Start (Docker)
 
-Get the app running in 5 steps. You need **Docker** and a **Supabase project**.
+Get the app running in 5 steps. You need **Docker**, **Node.js/npm** (for the Supabase CLI in step 4), and a **Supabase project**.
 
 ### 1. Clone and enter the repo
 

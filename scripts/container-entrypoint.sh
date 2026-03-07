@@ -3,9 +3,11 @@ set -e
 
 BACKEND_PID=""
 FRONTEND_PID=""
+SHUTDOWN=0
 
 cleanup() {
     echo "Received shutdown signal, cleaning up..."
+    SHUTDOWN=1
     if [ -n "$BACKEND_PID" ]; then
         kill -TERM "$BACKEND_PID" 2>/dev/null || true
     fi
@@ -14,9 +16,10 @@ cleanup() {
     fi
     wait "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true
     echo "Cleanup complete."
+    exit "${1:-1}"
 }
 
-trap cleanup SIGTERM SIGINT
+trap 'cleanup' SIGTERM SIGINT
 
 MISSING_VARS=""
 [ -z "$SUPABASE_URL" ] && MISSING_VARS="$MISSING_VARS SUPABASE_URL"
@@ -30,8 +33,9 @@ if [ -n "$MISSING_VARS" ]; then
     exit 1
 fi
 
-BACKEND_HOST="${HOST:-0.0.0.0}"
-BACKEND_PORT="${PORT:-8000}"
+BACKEND_HOST="${BACKEND_HOST:-0.0.0.0}"
+BACKEND_PORT="${BACKEND_PORT:-8000}"
+FRONTEND_PORT="${FRONTEND_PORT:-3000}"
 
 echo "Starting backend on ${BACKEND_HOST}:${BACKEND_PORT}..."
 cd /app/backend
@@ -42,6 +46,7 @@ echo "Waiting for backend to be ready..."
 TIMEOUT=30
 ELAPSED=0
 while [ $ELAPSED -lt $TIMEOUT ]; do
+    [ "$SHUTDOWN" -eq 1 ] && exit 1
     if python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:${BACKEND_PORT}/health')" 2>/dev/null; then
         echo "Backend is ready."
         break
@@ -56,9 +61,9 @@ if [ $ELAPSED -ge $TIMEOUT ]; then
     exit 1
 fi
 
-echo "Starting frontend..."
+echo "Starting frontend on port ${FRONTEND_PORT}..."
 cd /app/frontend
-HOSTNAME=0.0.0.0 PORT=3000 node server.js &
+HOSTNAME=0.0.0.0 PORT="$FRONTEND_PORT" node server.js &
 FRONTEND_PID=$!
 
 echo "Both services started. Monitoring processes..."
@@ -67,5 +72,4 @@ wait -n "$BACKEND_PID" "$FRONTEND_PID"
 EXIT_CODE=$?
 set -e
 
-cleanup
-exit $EXIT_CODE
+cleanup "$EXIT_CODE"
