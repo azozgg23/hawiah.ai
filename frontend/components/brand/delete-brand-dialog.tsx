@@ -35,7 +35,10 @@ export function DeleteBrandDialog({
     setLoading(true)
     setError(null)
     try {
-      await apiRequest(`/brands/${brand.id}`, { method: 'DELETE' })
+      await apiRequest(`/brands/${brand.id}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ confirm_name: confirmName }),
+      })
       onBrandDeleted()
       onOpenChange(false)
     } catch (err) {

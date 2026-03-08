@@ -10,7 +10,7 @@ import { Brand, LogoUploadResponse } from '@/types'
 export default function BrandSettingsPage() {
   const params = useParams()
   const router = useRouter()
-  const brandId = params.brandId as string
+  const brandId = Array.isArray(params.brandId) ? params.brandId[0] : params.brandId ?? ''
   const { brand, loading, error, mutate } = useBrand(brandId)
 
   const [newName, setNewName] = useState('')

@@ -6,7 +6,7 @@ import { useBrand } from '@/hooks/use-brand'
 
 export default function BrandLayout({ children }: { children: React.ReactNode }) {
   const params = useParams()
-  const brandId = params.brandId as string
+  const brandId = Array.isArray(params.brandId) ? params.brandId[0] : params.brandId ?? ''
   const { brand, loading, error } = useBrand(brandId)
 
   if (loading) {

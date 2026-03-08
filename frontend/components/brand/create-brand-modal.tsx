@@ -42,8 +42,16 @@ export function CreateBrandModal({ open, onOpenChange, onBrandCreated }: CreateB
     }
   }
 
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      setName('')
+      setError(null)
+    }
+    onOpenChange(isOpen)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create Brand</DialogTitle>
@@ -64,7 +72,7 @@ export function CreateBrandModal({ open, onOpenChange, onBrandCreated }: CreateB
           <DialogFooter className="mt-4">
             <button
               type="button"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleOpenChange(false)}
               className="rounded-md border px-4 py-2 text-sm hover:bg-gray-50"
             >
               Cancel

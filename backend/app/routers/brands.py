@@ -13,6 +13,7 @@ from app.models.brand import (
     BrandListItem,
     BrandResponse,
     CreateBrandRequest,
+    DeleteBrandRequest,
     LogoUploadResponse,
     UpdateBrandRequest,
 )
@@ -172,8 +173,16 @@ async def update_brand(
 
 
 @router.delete("/{brand_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_brand(brand_id: UUID, current_user: User = Depends(get_current_user)):
+async def delete_brand(
+    brand_id: UUID,
+    body: DeleteBrandRequest,
+    current_user: User = Depends(get_current_user),
+):
     brand = _get_brand_or_404(brand_id, current_user.id)
+    if body.confirm_name != brand["name"]:
+        raise _error_response(
+            400, "NAME_MISMATCH", "Confirmation name does not match brand name"
+        )
     client = get_service_client()
 
     # Step 1: Delete generation images from storage
@@ -250,12 +259,7 @@ async def upload_logo(
     storage_path = f"brands/{brand_id}/logo.{ext}"
 
     client = get_service_client()
-
-    if brand.get("logo_path"):
-        try:
-            client.storage.from_(settings.STORAGE_BUCKET).remove([brand["logo_path"]])
-        except Exception as e:
-            logger.warning(f"Failed to delete old logo: {e}")
+    old_logo_path = brand.get("logo_path")
 
     client.storage.from_(settings.STORAGE_BUCKET).upload(
         storage_path, resized_bytes, {"content-type": file.content_type, "upsert": "true"}
@@ -264,6 +268,12 @@ async def upload_logo(
     client.table("brands").update({"logo_path": storage_path}).eq(
         "id", str(brand_id)
     ).execute()
+
+    if old_logo_path and old_logo_path != storage_path:
+        try:
+            client.storage.from_(settings.STORAGE_BUCKET).remove([old_logo_path])
+        except Exception as e:
+            logger.warning(f"Failed to delete old logo {old_logo_path}: {e}")
 
     return LogoUploadResponse(logo_url=_build_logo_url(storage_path))
 

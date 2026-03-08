@@ -45,5 +45,9 @@ class BrandListItem(BaseModel):
     created_at: datetime
 
 
+class DeleteBrandRequest(BaseModel):
+    confirm_name: str
+
+
 class LogoUploadResponse(BaseModel):
     logo_url: str
