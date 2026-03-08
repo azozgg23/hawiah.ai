@@ -240,7 +240,7 @@ async def upload_logo(
         img.thumbnail((512, 512))
     except Exception as e:
         logger.warning(f"Image processing failed: {e}")
-        raise _error_response(400, "VALIDATION_ERROR", "Invalid or corrupted image file")
+        raise _error_response(400, "VALIDATION_ERROR", "Invalid or corrupted image file") from e
 
     # Validate actual image format (don't trust client content_type)
     allowed_formats = {"PNG": ("png", "image/png"), "JPEG": ("jpg", "image/jpeg"), "WEBP": ("webp", "image/webp")}
