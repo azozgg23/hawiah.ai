@@ -19,9 +19,8 @@ From the [Supabase Dashboard](https://supabase.com/dashboard) → your project �
 | Value | Where to find it |
 |-------|-----------------|
 | **Project URL** | Settings → API (e.g. `https://xxxxx.supabase.co`) |
-| **anon key** | Settings → API → Project API keys |
-| **service_role key** | Settings → API → Project API keys (reveal) |
-| **JWT Secret** | Settings → API → JWT Settings |
+| **Publishable key** | Settings → API → Project API keys |
+| **Secret key** | Settings → API → Project API keys (reveal) |
 
 ### 3. Create your env files
 
@@ -33,30 +32,38 @@ cp backend/.env.example backend/.env
 cp frontend/.env.local.example frontend/.env.local
 ```
 
-Edit **`backend/.env`** — fill in all four Supabase values:
+Edit **`backend/.env`** — fill in Supabase values:
 
 ```bash
 SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-SUPABASE_ANON_KEY=eyJ...
-SUPABASE_JWT_SECRET=your-jwt-secret
+SUPABASE_SECRET_KEY=sb_secret_...
 ```
 
-Edit **`frontend/.env.local`** — fill in URL and anon key:
+Edit **`frontend/.env.local`** — fill in URL and publishable key:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
 ### 4. Set up the database
 
+Install the [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started), then log in and push migrations:
+
 ```bash
-npx supabase link --project-ref <your-project-ref>
-npx supabase db push
+supabase login
+supabase link --project-ref <your-project-ref>
+supabase db push
 ```
 
-Then in the Supabase Dashboard → **Authentication → URL Configuration**, set:
+> **Where is my project ref?** It's in your Supabase Dashboard URL: `supabase.com/dashboard/project/<project-ref>`
+
+Then create the **`brand-assets`** storage bucket in the Dashboard → **Storage → New bucket**:
+- **Public bucket**: Yes
+- **File size limit**: 5 MB
+- **Allowed MIME types**: `image/png, image/jpeg, image/webp`
+
+Finally, configure auth redirects in the Dashboard → **Authentication → URL Configuration**:
 - **Site URL**: `http://localhost:3000`
 - **Redirect URLs**: add `http://localhost:3000/auth/confirm`
 

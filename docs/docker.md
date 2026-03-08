@@ -22,7 +22,7 @@ The container exposes port 3000 (frontend). The backend runs internally on local
 ```bash
 docker build \
   --build-arg NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co \
-  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key \
+  --build-arg NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_... \
   -t basarai:latest .
 ```
 
@@ -31,7 +31,7 @@ docker build \
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL (baked into client JS) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon/public key (baked into client JS) |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes | Supabase publishable key (baked into client JS) |
 
 **Important**: Build arguments are inlined into the JavaScript bundle at build time. They cannot be changed at runtime for client-side code. For multiple environments, build separate images per environment.
 
@@ -42,9 +42,7 @@ docker run -d \
   --name basarai \
   -p 3000:3000 \
   -e SUPABASE_URL=https://your-project.supabase.co \
-  -e SUPABASE_SERVICE_ROLE_KEY=your-service-role-key \
-  -e SUPABASE_ANON_KEY=your-anon-key \
-  -e SUPABASE_JWT_SECRET=your-jwt-secret \
+  -e SUPABASE_SECRET_KEY=sb_secret_... \
   basarai:latest
 ```
 
@@ -55,9 +53,7 @@ The application is available at `http://localhost:3000`.
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `SUPABASE_URL` | Yes | — | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | — | Server-side Supabase key (bypasses RLS) |
-| `SUPABASE_ANON_KEY` | Yes | — | Public Supabase key |
-| `SUPABASE_JWT_SECRET` | Yes | — | JWT verification secret |
+| `SUPABASE_SECRET_KEY` | Yes | — | Server-side Supabase key (bypasses RLS) |
 | `STORAGE_BUCKET` | No | `brand-assets` | Storage bucket name |
 | `ADMIN_EMAILS` | No | (empty) | Comma-separated operator emails |
 
@@ -93,6 +89,7 @@ Expected output: `{"status":"healthy","timestamp":"..."}`
 docker logs -f basarai
 
 # Recent logs
+
 docker logs --tail 50 basarai
 ```
 
@@ -127,9 +124,7 @@ docker push your-registry.com/basarai:latest
 3. Configure port: **3000**
 4. Set environment variables:
    - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `SUPABASE_ANON_KEY`
-   - `SUPABASE_JWT_SECRET`
+   - `SUPABASE_SECRET_KEY`
    - `STORAGE_BUCKET` (optional)
    - `ADMIN_EMAILS` (optional)
 5. Configure health check:
@@ -149,9 +144,7 @@ Bunny Magic handles HTTPS termination. The container serves HTTP only.
 
 **Solution**: The entrypoint script lists all missing variables. Set all required vars:
 - `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_JWT_SECRET`
+- `SUPABASE_SECRET_KEY`
 
 ### Backend Fails to Start
 
@@ -161,7 +154,7 @@ Bunny Magic handles HTTPS termination. The container serves HTTP only.
 
 **Solution**:
 1. Verify `SUPABASE_URL` is accessible from the container
-2. Check that `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_ANON_KEY` are valid
+2. Check that `SUPABASE_SECRET_KEY` is valid
 3. Ensure network connectivity to Supabase
 
 ### Frontend Build Fails
@@ -172,7 +165,7 @@ Bunny Magic handles HTTPS termination. The container serves HTTP only.
 
 **Solution**: Ensure both build args are provided:
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
 ### Container Marked Unhealthy
 
@@ -201,4 +194,5 @@ Bunny Magic handles HTTPS termination. The container serves HTTP only.
 - **API proxy**: Next.js rewrites `/api/*` to `http://127.0.0.1:8000/*`
 - **Process management**: `tini` as PID 1 + bash entrypoint script
 - **Image size**: ~560MB (Python 3.13 slim + Node.js 20)
-- **No secrets in layers**: Only `NEXT_PUBLIC_*` vars are in image (public keys)
+- **No secrets in layers**: Only `NEXT_PUBLIC_*` vars are in image (publishable keys)
+- **JWT verification**: JWKS-based asymmetric verification (RS256/ES256) via Supabase JWKS endpoint

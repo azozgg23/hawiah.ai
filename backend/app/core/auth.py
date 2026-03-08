@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import jwt
-from jwt import PyJWTError
+from jwt import PyJWKClient, PyJWTError
 
 from app.config import settings
 
@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 security = HTTPBearer(auto_error=False)
+
+_jwks_client = PyJWKClient(f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json")
 
 
 class User(BaseModel):
@@ -39,10 +41,11 @@ def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depen
         )
 
     try:
+        signing_key = _jwks_client.get_signing_key_from_jwt(credentials.credentials)
         payload = jwt.decode(
             credentials.credentials,
-            settings.SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
+            signing_key.key,
+            algorithms=["RS256", "ES256"],
             audience="authenticated",
         )
         user_id: str = payload.get("sub")
