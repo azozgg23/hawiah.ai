@@ -48,12 +48,22 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 
 ### 4. Set up the database
 
+Install the [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started), then log in and push migrations:
+
 ```bash
-npx supabase link --project-ref <your-project-ref>
-npx supabase db push
+supabase login
+supabase link --project-ref <your-project-ref>
+supabase db push
 ```
 
-Then in the Supabase Dashboard → **Authentication → URL Configuration**, set:
+> **Where is my project ref?** It's in your Supabase Dashboard URL: `supabase.com/dashboard/project/<project-ref>`
+
+Then create the **`brand-assets`** storage bucket in the Dashboard → **Storage → New bucket**:
+- **Public bucket**: Yes
+- **File size limit**: 5 MB
+- **Allowed MIME types**: `image/png, image/jpeg, image/webp`
+
+Finally, configure auth redirects in the Dashboard → **Authentication → URL Configuration**:
 - **Site URL**: `http://localhost:3000`
 - **Redirect URLs**: add `http://localhost:3000/auth/confirm`
 

@@ -40,7 +40,7 @@ def _get_brand_or_404(brand_id: UUID, user_id: str) -> dict:
         .maybe_single()
         .execute()
     )
-    if result.data is None:
+    if result is None or result.data is None:
         raise _error_response(404, "BRAND_NOT_FOUND", "Brand not found")
     return result.data
 
@@ -60,7 +60,7 @@ def _get_kit_status(brand_id: str) -> str:
         .maybe_single()
         .execute()
     )
-    if result.data is None:
+    if result is None or result.data is None:
         return "not_started"
     return result.data["status"]
 
