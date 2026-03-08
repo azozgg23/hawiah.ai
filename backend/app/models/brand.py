@@ -4,16 +4,20 @@ from typing import Optional
 from pydantic import BaseModel, field_validator
 
 
+def _validate_brand_name(v: str) -> str:
+    v = v.strip()
+    if len(v) < 2 or len(v) > 120:
+        raise ValueError("Brand name must be between 2 and 120 characters")
+    return v
+
+
 class CreateBrandRequest(BaseModel):
     name: str
 
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 2 or len(v) > 120:
-            raise ValueError("Brand name must be between 2 and 120 characters")
-        return v
+        return _validate_brand_name(v)
 
 
 class UpdateBrandRequest(BaseModel):
@@ -22,10 +26,7 @@ class UpdateBrandRequest(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 2 or len(v) > 120:
-            raise ValueError("Brand name must be between 2 and 120 characters")
-        return v
+        return _validate_brand_name(v)
 
 
 class BrandResponse(BaseModel):

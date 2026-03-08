@@ -92,7 +92,7 @@ async def create_brand(
         if "uq_brands_owner_name_ci" in str(e) or "duplicate key" in str(e):
             raise _error_response(
                 409, "DUPLICATE_BRAND_NAME", "A brand with this name already exists"
-            )
+            ) from e
         raise
     row = result.data[0]
     kit_status = _get_kit_status(row["id"])
@@ -165,7 +165,7 @@ async def update_brand(
         if "uq_brands_owner_name_ci" in str(e) or "duplicate key" in str(e):
             raise _error_response(
                 409, "DUPLICATE_BRAND_NAME", "A brand with this name already exists"
-            )
+            ) from e
         raise
     row = result.data[0]
     kit_status = _get_kit_status(row["id"])
@@ -285,7 +285,10 @@ async def delete_logo(brand_id: UUID, current_user: User = Depends(get_current_u
         raise _error_response(404, "LOGO_NOT_FOUND", "Brand has no logo to delete")
 
     client = get_service_client()
-    client.storage.from_(settings.STORAGE_BUCKET).remove([brand["logo_path"]])
+    try:
+        client.storage.from_(settings.STORAGE_BUCKET).remove([brand["logo_path"]])
+    except Exception as e:
+        logger.warning(f"Failed to delete logo from storage: {e}")
     client.table("brands").update({"logo_path": None}).eq(
         "id", str(brand_id)
     ).execute()

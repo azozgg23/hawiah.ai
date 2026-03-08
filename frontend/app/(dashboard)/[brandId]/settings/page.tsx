@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useBrand } from '@/hooks/use-brand'
 import { apiRequest } from '@/lib/api'
@@ -17,6 +17,7 @@ export default function BrandSettingsPage() {
   const [renameLoading, setRenameLoading] = useState(false)
   const [renameError, setRenameError] = useState<string | null>(null)
   const [renameSuccess, setRenameSuccess] = useState(false)
+  const nameDirty = useRef(false)
 
   const [logoLoading, setLogoLoading] = useState(false)
   const [logoError, setLogoError] = useState<string | null>(null)
@@ -24,7 +25,7 @@ export default function BrandSettingsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   useEffect(() => {
-    if (brand) {
+    if (brand && !nameDirty.current) {
       setNewName(brand.name)
     }
   }, [brand])
@@ -47,6 +48,7 @@ export default function BrandSettingsPage() {
         body: JSON.stringify({ name: newName.trim() }),
       })
       mutate(updated)
+      nameDirty.current = false
       setRenameSuccess(true)
     } catch (err) {
       setRenameError(err instanceof Error ? err.message : 'Failed to rename brand')
@@ -107,6 +109,7 @@ export default function BrandSettingsPage() {
             value={newName}
             onChange={(e) => {
               setNewName(e.target.value)
+              nameDirty.current = true
               setRenameSuccess(false)
             }}
             className="flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
