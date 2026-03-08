@@ -231,12 +231,6 @@ async def upload_logo(
 ):
     brand = _get_brand_or_404(brand_id, current_user.id)
 
-    allowed_types = ["image/png", "image/jpeg", "image/webp"]
-    if file.content_type not in allowed_types:
-        raise _error_response(
-            400, "INVALID_FILE_TYPE", "Only PNG, JPG, and WebP images are accepted"
-        )
-
     file_bytes = await file.read()
     if len(file_bytes) > 5 * 1024 * 1024:
         raise _error_response(400, "VALIDATION_ERROR", "File size exceeds 5 MB limit")
@@ -248,26 +242,38 @@ async def upload_logo(
         logger.warning(f"Image processing failed: {e}")
         raise _error_response(400, "VALIDATION_ERROR", "Invalid or corrupted image file")
 
+    # Validate actual image format (don't trust client content_type)
+    allowed_formats = {"PNG": ("png", "image/png"), "JPEG": ("jpg", "image/jpeg"), "WEBP": ("webp", "image/webp")}
+    if img.format not in allowed_formats:
+        raise _error_response(
+            400, "INVALID_FILE_TYPE", "Only PNG, JPG, and WebP images are accepted"
+        )
+    ext, mime_type = allowed_formats[img.format]
+
     output = io.BytesIO()
-    fmt_map = {"image/png": "PNG", "image/jpeg": "JPEG", "image/webp": "WEBP"}
-    fmt = fmt_map[file.content_type]
-    img.save(output, format=fmt)
+    img.save(output, format=img.format)
     resized_bytes = output.getvalue()
 
-    ext_map = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}
-    ext = ext_map[file.content_type]
     storage_path = f"brands/{brand_id}/logo.{ext}"
 
     client = get_service_client()
     old_logo_path = brand.get("logo_path")
 
     client.storage.from_(settings.STORAGE_BUCKET).upload(
-        storage_path, resized_bytes, {"content-type": file.content_type, "upsert": "true"}
+        storage_path, resized_bytes, {"content-type": mime_type, "upsert": "true"}
     )
 
-    client.table("brands").update({"logo_path": storage_path}).eq(
-        "id", str(brand_id)
-    ).execute()
+    try:
+        client.table("brands").update({"logo_path": storage_path}).eq(
+            "id", str(brand_id)
+        ).execute()
+    except Exception:
+        if old_logo_path != storage_path:
+            try:
+                client.storage.from_(settings.STORAGE_BUCKET).remove([storage_path])
+            except Exception as cleanup_err:
+                logger.warning(f"Failed to clean up uploaded logo after DB error: {cleanup_err}")
+        raise
 
     if old_logo_path and old_logo_path != storage_path:
         try:
