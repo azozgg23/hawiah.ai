@@ -19,9 +19,8 @@ From the [Supabase Dashboard](https://supabase.com/dashboard) → your project �
 | Value | Where to find it |
 |-------|-----------------|
 | **Project URL** | Settings → API (e.g. `https://xxxxx.supabase.co`) |
-| **anon key** | Settings → API → Project API keys |
-| **service_role key** | Settings → API → Project API keys (reveal) |
-| **JWT Secret** | Settings → API → JWT Settings |
+| **Publishable key** | Settings → API → Project API keys |
+| **Secret key** | Settings → API → Project API keys (reveal) |
 
 ### 3. Create your env files
 
@@ -33,20 +32,18 @@ cp backend/.env.example backend/.env
 cp frontend/.env.local.example frontend/.env.local
 ```
 
-Edit **`backend/.env`** — fill in all four Supabase values:
+Edit **`backend/.env`** — fill in Supabase values:
 
 ```bash
 SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-SUPABASE_ANON_KEY=eyJ...
-SUPABASE_JWT_SECRET=your-jwt-secret
+SUPABASE_SECRET_KEY=sb_secret_...
 ```
 
-Edit **`frontend/.env.local`** — fill in URL and anon key:
+Edit **`frontend/.env.local`** — fill in URL and publishable key:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
 ### 4. Set up the database

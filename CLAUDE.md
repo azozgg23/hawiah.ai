@@ -33,7 +33,7 @@ cd frontend && npm run dev
 Python 3.13 (backend), TypeScript 5.x (frontend): Follow standard conventions
 
 ## Recent Changes
-- 003-brand-crud: Added Python 3.12 (backend), TypeScript 5.x (frontend) + FastAPI 0.109+, Pydantic 2.x, Pillow 10+ (new — for logo resize), supabase-py 2.3+, Next.js 14 (App Router), @supabase/ssr, shadcn/ui, Tailwind CSS, zod, react-hook-form
+- 003-brand-crud: Added Python 3.13 (backend), TypeScript 5.x (frontend) + FastAPI 0.109+, Pydantic 2.x, Pillow 10+ (new — for logo resize), supabase-py 2.3+, Next.js 14 (App Router), @supabase/ssr, shadcn/ui, Tailwind CSS, zod, react-hook-form
 - 002-dockerization: Added Dockerfile, Bash (entrypoint); modifies Python 3.13 backend + TypeScript/Next.js 14 frontend configs + Docker (multi-stage build), tini (PID 1 init), Node.js 20, Python 3.13, uvicorn
 
 - 001-foundation: Added Python 3.13 (backend), TypeScript 5.x (frontend) + FastAPI 0.109+, Next.js 14 (App Router), @supabase/ssr, @supabase/supabase-js, PyJWT, supabase-py, shadcn/ui, Tailwind CSS
@@ -49,15 +49,28 @@ Python 3.13 (backend), TypeScript 5.x (frontend): Follow standard conventions
 
 ## Supabase
 
-- Local dev: `supabase start` from project root; migrations are in `supabase/migrations/`
-- Known issue: SQL migration order matters — if `supabase start` fails, check migration file timestamps and dependencies
-- Config: `supabase/config.toml`
+- Remote Supabase only — no local Supabase. Connect via `supabase link --project-ref <ref>`, push migrations with `supabase db push`
+- Migrations: `supabase/migrations/`; config: `supabase/config.toml`
+
+### CRITICAL: API Key Migration (2026-03)
+
+Supabase deprecated legacy key names. This project uses the NEW naming:
+- **Backend**: `SUPABASE_SECRET_KEY` (was `SUPABASE_SERVICE_ROLE_KEY`) — the only backend key needed
+- **Frontend**: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (was `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+- **Removed entirely**: `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET` — dead code, do NOT re-add
+- **JWT verification**: JWKS asymmetric (RS256/ES256) via `PyJWKClient`, NOT HS256 + shared secret
+- JWKS endpoint: `{SUPABASE_URL}/auth/v1/.well-known/jwks.json`
+- Docs: https://supabase.com/docs/guides/api/api-keys | https://supabase.com/docs/guides/auth/jwts
+- `get_user_client()` was deleted (dead code) — only `get_service_client()` exists
 
 ## Deployment
 
 - Target platform: Bunny Magic (container hosting)
 - Single-container strategy: both frontend (Next.js) and backend (FastAPI) in one image
 - HTTPS termination handled by platform; container serves HTTP only
+- Docker commands: `make up` (build+run), `make logs`, `make down`, `make health`
+- Build args (baked into JS): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- Runtime env (via `--env-file backend/.env`): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`
 
 ## Code Review
 
