@@ -1,5 +1,6 @@
 import io
 import logging
+from urllib.parse import urlencode
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -45,10 +46,13 @@ def _get_brand_or_404(brand_id: UUID, user_id: str) -> dict:
     return result.data
 
 
-def _build_logo_url(logo_path: str | None) -> str | None:
+def _build_logo_url(logo_path: str | None, updated_at: str | None = None) -> str | None:
     if logo_path is None:
         return None
-    return f"{settings.SUPABASE_URL}/storage/v1/object/public/{settings.STORAGE_BUCKET}/{logo_path}"
+    logo_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/{settings.STORAGE_BUCKET}/{logo_path}"
+    if updated_at:
+        return f"{logo_url}?{urlencode({'v': updated_at})}"
+    return logo_url
 
 
 def _get_kit_status(brand_id: str) -> str:
@@ -69,7 +73,7 @@ def _brand_response(row: dict, kit_status: str) -> BrandResponse:
     return BrandResponse(
         id=row["id"],
         name=row["name"],
-        logo_url=_build_logo_url(row.get("logo_path")),
+        logo_url=_build_logo_url(row.get("logo_path"), row.get("updated_at")),
         kit_status=kit_status,
         created_at=row["created_at"],
         updated_at=row["updated_at"],
@@ -127,7 +131,7 @@ async def list_brands(current_user: User = Depends(get_current_user)):
             BrandListItem(
                 id=row["id"],
                 name=row["name"],
-                logo_url=_build_logo_url(row.get("logo_path")),
+                logo_url=_build_logo_url(row.get("logo_path"), row.get("updated_at")),
                 kit_status=kit_status,
                 created_at=row["created_at"],
             )
@@ -264,7 +268,7 @@ async def upload_logo(
     )
 
     try:
-        client.table("brands").update({"logo_path": storage_path}).eq(
+        update_result = client.table("brands").update({"logo_path": storage_path}).eq(
             "id", str(brand_id)
         ).execute()
     except Exception:
@@ -281,7 +285,10 @@ async def upload_logo(
         except Exception as e:
             logger.warning(f"Failed to delete old logo {old_logo_path}: {e}")
 
-    return LogoUploadResponse(logo_url=_build_logo_url(storage_path))
+    updated_row = update_result.data[0]
+    return LogoUploadResponse(
+        logo_url=_build_logo_url(storage_path, updated_row.get("updated_at"))
+    )
 
 
 @router.delete("/{brand_id}/logo", status_code=status.HTTP_204_NO_CONTENT)

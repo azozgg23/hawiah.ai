@@ -1,6 +1,29 @@
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+
+async function getServerApiUrl(path: string) {
+  const serverBase = process.env.NEXT_SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL
+
+  if (!serverBase) {
+    throw new Error('API base URL is not configured')
+  }
+
+  if (serverBase.startsWith('http://') || serverBase.startsWith('https://')) {
+    return new URL(path, serverBase).toString()
+  }
+
+  const requestHeaders = await headers()
+  const host = requestHeaders.get('x-forwarded-host') || requestHeaders.get('host')
+  const protocol = requestHeaders.get('x-forwarded-proto') || 'http'
+
+  if (!host) {
+    throw new Error('Request host is unavailable for server-side API call')
+  }
+
+  return new URL(`${serverBase}${path}`, `${protocol}://${host}`).toString()
+}
 
 async function ensureBrandAccess(brandId: string) {
   const supabase = await createClient()
@@ -15,7 +38,9 @@ async function ensureBrandAccess(brandId: string) {
     redirect('/login')
   }
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/brands/${brandId}`, {
+  const apiUrl = await getServerApiUrl(`/brands/${brandId}`)
+
+  const response = await fetch(apiUrl, {
     headers: {
       Authorization: `Bearer ${session.access_token}`,
     },
