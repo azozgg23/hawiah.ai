@@ -1,6 +1,37 @@
 import { createClient } from './supabase/client'
 import { ErrorResponse } from '../types'
 
+function getErrorMessage(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const errorPayload = payload as {
+    error?: { message?: unknown }
+    detail?: unknown
+  }
+
+  if (typeof errorPayload.error?.message === 'string') {
+    return errorPayload.error.message
+  }
+
+  if (typeof errorPayload.detail === 'string') {
+    return errorPayload.detail
+  }
+
+  if (Array.isArray(errorPayload.detail)) {
+    const firstMessage = errorPayload.detail.find(
+      (item): item is { msg?: string } =>
+        Boolean(item) && typeof item === 'object' && 'msg' in item
+    )
+    if (typeof firstMessage?.msg === 'string') {
+      return firstMessage.msg
+    }
+  }
+
+  return null
+}
+
 export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
@@ -32,13 +63,13 @@ export async function apiRequest<T = unknown>(
   }
 
   if (!response.ok) {
-    let message = 'API request failed'
+    let message = response.statusText || 'API request failed'
     const contentType = response.headers.get('content-type') || ''
     if (contentType.includes('application/json')) {
       try {
         const text = await response.text()
         const error = JSON.parse(text) as ErrorResponse
-        message = error.error?.message || message
+        message = getErrorMessage(error) || message
       } catch {
         // JSON parse failed, use default message
       }

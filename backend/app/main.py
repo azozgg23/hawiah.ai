@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from uuid import uuid4
 
 from app.routers import brands, health, me
 
@@ -43,6 +45,32 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         status_code=exc.status_code,
         content={"detail": exc.detail},
         headers=getattr(exc, "headers", None),
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(
+    request: Request, exc: RequestValidationError
+):
+    errors = exc.errors()
+    name_error = next(
+        (
+            error.get("msg")
+            for error in errors
+            if any(part == "name" for part in error.get("loc", []))
+        ),
+        None,
+    )
+    message = name_error or "Invalid request payload"
+    return JSONResponse(
+        status_code=400,
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": message,
+                "request_id": str(uuid4()),
+            }
+        },
     )
 
 

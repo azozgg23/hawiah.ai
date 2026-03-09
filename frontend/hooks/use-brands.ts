@@ -1,34 +1,18 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { apiRequest } from '@/lib/api'
-import { BrandListItem } from '@/types'
+import { useBrandsContext } from '@/components/providers/brands-provider'
 
 export function useBrands() {
-  const [brands, setBrands] = useState<BrandListItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { brands, loading, error, refetchBrands, addBrand, updateBrand, removeBrand } =
+    useBrandsContext()
 
-  const fetchBrands = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const data = await apiRequest<BrandListItem[]>('/brands')
-      setBrands(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load brands')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchBrands()
-  }, [fetchBrands])
-
-  const mutate = useCallback((updatedBrands: BrandListItem[]) => {
-    setBrands(updatedBrands)
-  }, [])
-
-  return { brands, loading, error, mutate, refetch: fetchBrands }
+  return {
+    brands,
+    loading,
+    error,
+    refetch: refetchBrands,
+    addBrand,
+    updateBrand,
+    removeBrand,
+  }
 }
