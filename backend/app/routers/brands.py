@@ -285,6 +285,9 @@ async def upload_logo(
         except Exception as e:
             logger.warning(f"Failed to delete old logo {old_logo_path}: {e}")
 
+    if not update_result.data:
+        raise _error_response(404, "BRAND_NOT_FOUND", "Brand not found")
+
     updated_row = update_result.data[0]
     return LogoUploadResponse(
         logo_url=_build_logo_url(storage_path, updated_row.get("updated_at"))

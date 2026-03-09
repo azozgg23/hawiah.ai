@@ -11,7 +11,12 @@ async function getServerApiUrl(path: string) {
   }
 
   if (serverBase.startsWith('http://') || serverBase.startsWith('https://')) {
-    return new URL(path, serverBase).toString()
+    const base = new URL(serverBase)
+    const basePathname = base.pathname.replace(/\/+$/, '')
+    const nextPathname = path.replace(/^\/+/, '')
+
+    base.pathname = [basePathname, nextPathname].filter(Boolean).join('/') || '/'
+    return base.toString()
   }
 
   const requestHeaders = await headers()
