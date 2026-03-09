@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import { useBrand } from '@/hooks/use-brand'
+import { useBrands } from '@/hooks/use-brands'
 import { apiRequest } from '@/lib/api'
 import { DeleteBrandDialog } from '@/components/brand/delete-brand-dialog'
 import { Brand, LogoUploadResponse } from '@/types'
@@ -12,6 +14,7 @@ export default function BrandSettingsPage() {
   const router = useRouter()
   const brandId = Array.isArray(params.brandId) ? params.brandId[0] : params.brandId ?? ''
   const { brand, loading, error, mutate } = useBrand(brandId)
+  const { updateBrand, removeBrand } = useBrands()
 
   const [newName, setNewName] = useState('')
   const [renameLoading, setRenameLoading] = useState(false)
@@ -48,6 +51,7 @@ export default function BrandSettingsPage() {
         body: JSON.stringify({ name: newName.trim() }),
       })
       mutate(updated)
+      updateBrand(updated)
       nameDirty.current = false
       setRenameSuccess(true)
     } catch (err) {
@@ -70,7 +74,9 @@ export default function BrandSettingsPage() {
         `/brands/${brandId}/logo`,
         { method: 'POST', body: formData }
       )
-      mutate({ ...brand, logo_url: result.logo_url })
+      const updatedBrand = { ...brand, logo_url: result.logo_url }
+      mutate(updatedBrand)
+      updateBrand(updatedBrand)
     } catch (err) {
       setLogoError(err instanceof Error ? err.message : 'Failed to upload logo')
     } finally {
@@ -84,7 +90,9 @@ export default function BrandSettingsPage() {
     setLogoError(null)
     try {
       await apiRequest(`/brands/${brandId}/logo`, { method: 'DELETE' })
-      mutate({ ...brand, logo_url: null })
+      const updatedBrand = { ...brand, logo_url: null }
+      mutate(updatedBrand)
+      updateBrand(updatedBrand)
     } catch (err) {
       setLogoError(err instanceof Error ? err.message : 'Failed to remove logo')
     } finally {
@@ -93,6 +101,7 @@ export default function BrandSettingsPage() {
   }
 
   const handleBrandDeleted = () => {
+    removeBrand(brandId)
     router.push('/brands')
   }
 
@@ -115,6 +124,7 @@ export default function BrandSettingsPage() {
             className="flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
+            type="button"
             onClick={handleRename}
             disabled={renameLoading || !newName.trim()}
             className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
@@ -131,9 +141,11 @@ export default function BrandSettingsPage() {
         <h3 className="text-sm font-medium">Brand Logo</h3>
         <div className="mt-2 flex items-center gap-4">
           {brand.logo_url ? (
-            <img
+            <Image
               src={brand.logo_url}
               alt={brand.name}
+              width={64}
+              height={64}
               className="h-16 w-16 rounded-full object-cover"
             />
           ) : (
@@ -154,6 +166,7 @@ export default function BrandSettingsPage() {
             </label>
             {brand.logo_url && (
               <button
+                type="button"
                 onClick={handleLogoRemove}
                 disabled={logoLoading}
                 className="text-left text-sm text-red-600 hover:text-red-700 disabled:opacity-50"
@@ -173,6 +186,7 @@ export default function BrandSettingsPage() {
           Permanently delete this brand and all associated data.
         </p>
         <button
+          type="button"
           onClick={() => setShowDeleteDialog(true)}
           className="mt-4 rounded-md bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
         >

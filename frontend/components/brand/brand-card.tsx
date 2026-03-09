@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { BrandListItem } from '@/types'
 
 interface BrandCardProps {
@@ -22,9 +23,11 @@ export function BrandCard({ brand }: BrandCardProps) {
       className="flex items-center gap-4 rounded-lg border p-4 hover:bg-gray-50 transition-colors"
     >
       {brand.logo_url ? (
-        <img
+        <Image
           src={brand.logo_url}
           alt={brand.name}
+          width={48}
+          height={48}
           className="h-12 w-12 rounded-full object-cover"
         />
       ) : (

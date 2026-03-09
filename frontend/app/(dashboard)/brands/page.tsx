@@ -9,11 +9,11 @@ import { Brand } from '@/types'
 
 export default function BrandsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const { brands, loading, error, refetch } = useBrands()
+  const { brands, loading, error, addBrand } = useBrands()
   const router = useRouter()
 
   const handleBrandCreated = (brand: Brand) => {
-    refetch()
+    addBrand(brand)
     router.push(`/${brand.id}`)
   }
 
@@ -22,6 +22,7 @@ export default function BrandsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Brands</h1>
         <button
+          type="button"
           onClick={() => setShowCreateModal(true)}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
         >
@@ -39,6 +40,7 @@ export default function BrandsPage() {
             No brands yet. Create your first brand to get started.
           </p>
           <button
+            type="button"
             onClick={() => setShowCreateModal(true)}
             className="mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
           >

@@ -6,8 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { useBrands } from '@/hooks/use-brands'
 import { BrandSelector } from '@/components/brand-selector'
+import { BrandsProvider } from '@/components/providers/brands-provider'
 
-export default function DashboardLayout({
+function DashboardLayoutContent({
   children,
 }: {
   children: React.ReactNode
@@ -49,5 +50,17 @@ export default function DashboardLayout({
       </nav>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
     </div>
+  )
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <BrandsProvider>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </BrandsProvider>
   )
 }
