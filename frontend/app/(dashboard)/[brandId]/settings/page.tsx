@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import { useBrand } from '@/hooks/use-brand'
 import { useBrands } from '@/hooks/use-brands'
@@ -140,9 +141,11 @@ export default function BrandSettingsPage() {
         <h3 className="text-sm font-medium">Brand Logo</h3>
         <div className="mt-2 flex items-center gap-4">
           {brand.logo_url ? (
-            <img
+            <Image
               src={brand.logo_url}
               alt={brand.name}
+              width={64}
+              height={64}
               className="h-16 w-16 rounded-full object-cover"
             />
           ) : (

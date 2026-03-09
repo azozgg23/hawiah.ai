@@ -1,6 +1,23 @@
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const remotePatterns = [];
+
+if (supabaseUrl) {
+  const { protocol, hostname, port } = new URL(supabaseUrl);
+
+  remotePatterns.push({
+    protocol: protocol.replace(':', ''),
+    hostname,
+    port,
+    pathname: '/storage/v1/object/public/**',
+  });
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  images: {
+    remotePatterns,
+  },
   async rewrites() {
     return [
       {

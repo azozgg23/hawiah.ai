@@ -286,6 +286,12 @@ async def upload_logo(
             logger.warning(f"Failed to delete old logo {old_logo_path}: {e}")
 
     if not update_result.data:
+        try:
+            client.storage.from_(settings.STORAGE_BUCKET).remove([storage_path])
+        except Exception as cleanup_err:
+            logger.warning(
+                f"Failed to clean up uploaded logo after missing brand update: {cleanup_err}"
+            )
         raise _error_response(404, "BRAND_NOT_FOUND", "Brand not found")
 
     updated_row = update_result.data[0]

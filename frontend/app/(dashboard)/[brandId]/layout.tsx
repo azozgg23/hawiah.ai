@@ -27,7 +27,10 @@ async function getServerApiUrl(path: string) {
     throw new Error('Request host is unavailable for server-side API call')
   }
 
-  return new URL(`${serverBase}${path}`, `${protocol}://${host}`).toString()
+  const normalizedBase = serverBase.replace(/\/+$/, '')
+  const normalizedPath = path.replace(/^\/+/, '')
+
+  return new URL(`${normalizedBase}/${normalizedPath}`, `${protocol}://${host}`).toString()
 }
 
 async function ensureBrandAccess(brandId: string) {
