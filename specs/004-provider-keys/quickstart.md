@@ -23,8 +23,7 @@ This deploys the new migration with `insert_vault_secret`, `read_vault_secret`, 
 ### 2. Verify Vault Functions
 
 ```bash
-# Using supabase CLI to test
-supabase functions list  # or check via SQL editor
+# Verify via SQL editor (the Vault RPCs are SQL functions, not Edge Functions)
 ```
 
 In the Supabase SQL editor, verify:

@@ -28,7 +28,7 @@ export function AddKeyModal({
   defaultProvider,
 }: AddKeyModalProps) {
   const [provider, setProvider] = useState<'openai' | 'gemini'>(
-    (defaultProvider as 'openai' | 'gemini') || 'openai'
+    defaultProvider === 'openai' || defaultProvider === 'gemini' ? defaultProvider : 'openai'
   )
   const [key, setKey] = useState('')
   const [label, setLabel] = useState('')

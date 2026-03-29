@@ -17,7 +17,7 @@ async def validate_openai_key(api_key: str) -> tuple[bool, str | None]:
             if resp.status_code == 401:
                 try:
                     message = resp.json()["error"]["message"]
-                except (KeyError, ValueError):
+                except ValueError:
                     message = "Invalid API key"
                 return (False, message)
             return (False, f"Unexpected status code: {resp.status_code}")
@@ -40,7 +40,7 @@ async def validate_gemini_key(api_key: str) -> tuple[bool, str | None]:
                 try:
                     data = resp.json()
                     message = data.get("error", {}).get("message", "Invalid API key")
-                except (KeyError, ValueError):
+                except ValueError:
                     message = "Invalid API key"
                 return (False, message)
             return (False, f"Unexpected status code: {resp.status_code}")

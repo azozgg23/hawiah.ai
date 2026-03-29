@@ -15,7 +15,7 @@ export default function KeysPage() {
   const { keys, loading, error, refetch } = useKeys(brandId)
 
   const [showAddModal, setShowAddModal] = useState(false)
-  const [addModalProvider, setAddModalProvider] = useState<string>('openai')
+  const [addModalProvider, setAddModalProvider] = useState<'openai' | 'gemini'>('openai')
   const [validatingKeyId, setValidatingKeyId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 

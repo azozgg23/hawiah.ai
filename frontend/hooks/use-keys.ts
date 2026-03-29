@@ -10,6 +10,11 @@ export function useKeys(brandId: string) {
   const [error, setError] = useState<string | null>(null)
 
   const fetchKeys = useCallback(async () => {
+    if (!brandId) {
+      setKeys([])
+      setLoading(false)
+      return
+    }
     try {
       setLoading(true)
       setError(null)

@@ -3,18 +3,20 @@
 import { useState } from 'react'
 import { ProviderKey } from '@/types'
 
+type Provider = 'openai' | 'gemini'
+
 interface ProviderTabsProps {
   keys: ProviderKey[]
-  children: (filteredKeys: ProviderKey[], activeProvider: string) => React.ReactNode
+  children: (filteredKeys: ProviderKey[], activeProvider: Provider) => React.ReactNode
 }
 
-const PROVIDERS = [
+const PROVIDERS: { id: Provider; label: string }[] = [
   { id: 'openai', label: 'OpenAI' },
   { id: 'gemini', label: 'Gemini' },
 ]
 
 export function ProviderTabs({ keys, children }: ProviderTabsProps) {
-  const [activeProvider, setActiveProvider] = useState('openai')
+  const [activeProvider, setActiveProvider] = useState<Provider>('openai')
 
   const filteredKeys = keys.filter((k) => k.provider === activeProvider)
 

@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -105,7 +106,7 @@ async def add_key(
         )
     except Exception as e:
         logger.error("Vault store failed: %s", e)
-        raise _error_response(502, "VAULT_ERROR", "Failed to store key securely")
+        raise _error_response(502, "VAULT_ERROR", "Failed to store key securely") from e
 
     if body.make_active:
         client.table("provider_keys").update(
@@ -143,14 +144,13 @@ async def validate_key(
         api_key = read_secret(key["vault_secret_id"])
     except Exception as e:
         logger.error("Vault read failed: %s", e)
-        raise _error_response(502, "VAULT_ERROR", "Failed to retrieve key from vault")
+        raise _error_response(502, "VAULT_ERROR", "Failed to retrieve key from vault") from e
 
     if not api_key:
-        raise _error_response(502, "VAULT_ERROR", "Key not found in vault")
+        raise _error_response(502, "VAULT_ERROR", "Key not found in vault") from None
 
     is_valid, error_message = await validate_provider_key(key["provider"], api_key)
 
-    from datetime import datetime, timezone
     now = datetime.now(timezone.utc)
 
     update_data = {
