@@ -108,35 +108,40 @@ async def add_key(
         logger.error("Vault store failed: %s", e)
         raise _error_response(502, "VAULT_ERROR", "Failed to store key securely") from e
 
-    if body.make_active:
-        client.table("provider_keys").update(
-            {"is_active": False}
-        ).eq(
-            "brand_id", str(brand_id)
-        ).eq(
-            "provider", body.provider
-        ).eq(
-            "is_active", True
-        ).execute()
-
-    # Auto-validate against provider before saving
-    is_valid, validation_error = await validate_provider_key(body.provider, body.key)
-    now = datetime.now(timezone.utc).isoformat()
-
-    row_data = {
-        "brand_id": str(brand_id),
-        "provider": body.provider,
-        "vault_secret_id": vault_secret_id,
-        "label": body.label,
-        "key_hint": key_hint,
-        "is_active": body.make_active,
-        "is_valid": is_valid,
-        "last_validated_at": now,
-        "last_validation_error": None if is_valid else validation_error,
-    }
     try:
+        if body.make_active:
+            client.table("provider_keys").update(
+                {"is_active": False}
+            ).eq(
+                "brand_id", str(brand_id)
+            ).eq(
+                "provider", body.provider
+            ).eq(
+                "is_active", True
+            ).execute()
+
+        # Auto-validate against provider before saving
+        is_valid, validation_error = await validate_provider_key(body.provider, body.key)
+        now = datetime.now(timezone.utc).isoformat()
+
+        row_data = {
+            "brand_id": str(brand_id),
+            "provider": body.provider,
+            "vault_secret_id": vault_secret_id,
+            "label": body.label,
+            "key_hint": key_hint,
+            "is_active": body.make_active,
+            "is_valid": is_valid,
+            "last_validated_at": now,
+            "last_validation_error": None if is_valid else validation_error,
+        }
         result = client.table("provider_keys").insert(row_data).execute()
     except Exception as e:
+        # Best-effort cleanup of orphaned vault secret
+        try:
+            delete_secret(vault_secret_id)
+        except Exception:
+            logger.warning("Failed to clean up vault secret %s after add_key failure", vault_secret_id)
         if "uq_provider_keys_one_active" in str(e):
             raise _error_response(409, "ACTIVE_KEY_CONFLICT", "Another key is already active for this provider") from e
         raise
