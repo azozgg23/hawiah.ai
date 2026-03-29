@@ -119,6 +119,10 @@ async def add_key(
             "is_active", True
         ).execute()
 
+    # Auto-validate against provider before saving
+    is_valid, validation_error = await validate_provider_key(body.provider, body.key)
+    now = datetime.now(timezone.utc).isoformat()
+
     row_data = {
         "brand_id": str(brand_id),
         "provider": body.provider,
@@ -126,6 +130,9 @@ async def add_key(
         "label": body.label,
         "key_hint": key_hint,
         "is_active": body.make_active,
+        "is_valid": is_valid,
+        "last_validated_at": now,
+        "last_validation_error": None if is_valid else validation_error,
     }
     result = client.table("provider_keys").insert(row_data).execute()
     return _key_response(result.data[0])
