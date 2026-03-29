@@ -23,8 +23,9 @@ async def validate_openai_key(api_key: str) -> tuple[bool, str | None]:
             return (False, f"Unexpected status code: {resp.status_code}")
     except httpx.TimeoutException:
         return (False, "Provider API timed out")
-    except Exception as e:
-        return (False, str(e))
+    except httpx.HTTPError:
+        logger.exception("OpenAI validation request failed")
+        return (False, "Provider API request failed")
 
 
 async def validate_gemini_key(api_key: str) -> tuple[bool, str | None]:
@@ -32,7 +33,8 @@ async def validate_gemini_key(api_key: str) -> tuple[bool, str | None]:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(
                 "https://generativelanguage.googleapis.com/v1beta/models",
-                params={"key": api_key, "pageSize": "1"},
+                headers={"x-goog-api-key": api_key},
+                params={"pageSize": "1"},
             )
             if resp.status_code == 200:
                 return (True, None)
@@ -46,8 +48,9 @@ async def validate_gemini_key(api_key: str) -> tuple[bool, str | None]:
             return (False, f"Unexpected status code: {resp.status_code}")
     except httpx.TimeoutException:
         return (False, "Provider API timed out")
-    except Exception as e:
-        return (False, str(e))
+    except httpx.HTTPError:
+        logger.exception("Gemini validation request failed")
+        return (False, "Provider API request failed")
 
 
 async def validate_provider_key(provider: str, api_key: str) -> tuple[bool, str | None]:

@@ -97,7 +97,7 @@ async def add_key(
     _get_brand_or_404(brand_id, current_user.id)
     client = get_service_client()
 
-    key_hint = body.key[-4:] if len(body.key) >= 4 else body.key
+    key_hint = body.key[-4:] if len(body.key) >= 4 else ("*" * len(body.key))
 
     try:
         vault_secret_id = store_secret(
@@ -134,7 +134,12 @@ async def add_key(
         "last_validated_at": now,
         "last_validation_error": None if is_valid else validation_error,
     }
-    result = client.table("provider_keys").insert(row_data).execute()
+    try:
+        result = client.table("provider_keys").insert(row_data).execute()
+    except Exception as e:
+        if "uq_provider_keys_one_active" in str(e):
+            raise _error_response(409, "ACTIVE_KEY_CONFLICT", "Another key is already active for this provider") from e
+        raise
     return _key_response(result.data[0])
 
 
@@ -200,12 +205,17 @@ async def activate_key(
         "is_active", True
     ).execute()
 
-    result = (
-        client.table("provider_keys")
-        .update({"is_active": True})
-        .eq("id", str(key_id))
-        .execute()
-    )
+    try:
+        result = (
+            client.table("provider_keys")
+            .update({"is_active": True})
+            .eq("id", str(key_id))
+            .execute()
+        )
+    except Exception as e:
+        if "uq_provider_keys_one_active" in str(e):
+            raise _error_response(409, "ACTIVE_KEY_CONFLICT", "Another key is already active for this provider") from e
+        raise
     return _key_response(result.data[0])
 
 
