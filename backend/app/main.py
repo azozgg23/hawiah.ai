@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from uuid import uuid4
 
-from app.routers import brands, health, me
+from app.routers import brands, health, keys, me
 
 
 @asynccontextmanager
@@ -31,6 +31,7 @@ app.add_middleware(
 app.include_router(health.router, tags=["health"])
 app.include_router(me.router, tags=["account"])
 app.include_router(brands.router)
+app.include_router(keys.router)
 
 
 @app.exception_handler(HTTPException)
