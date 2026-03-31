@@ -50,7 +50,7 @@ class ProviderKeyResponse(BaseModel):
 
 
 class ValidateKeyResponse(BaseModel):
-    valid: bool
+    valid: bool | None = None
     validated_at: datetime
     error: str | None = None
     key_id: str

@@ -108,21 +108,27 @@ async def add_key(
         logger.error("Vault store failed: %s", e)
         raise _error_response(502, "VAULT_ERROR", "Failed to store key securely") from e
 
+    # Validate BEFORE touching active status so failures don't orphan the old key
+    is_valid, validation_error = await validate_provider_key(body.provider, body.key)
+    now = datetime.now(timezone.utc).isoformat()
+
+    deactivated_key_id = None
     try:
         if body.make_active:
-            client.table("provider_keys").update(
-                {"is_active": False}
-            ).eq(
-                "brand_id", str(brand_id)
-            ).eq(
-                "provider", body.provider
-            ).eq(
-                "is_active", True
-            ).execute()
-
-        # Auto-validate against provider before saving
-        is_valid, validation_error = await validate_provider_key(body.provider, body.key)
-        now = datetime.now(timezone.utc).isoformat()
+            existing = (
+                client.table("provider_keys")
+                .select("id")
+                .eq("brand_id", str(brand_id))
+                .eq("provider", body.provider)
+                .eq("is_active", True)
+                .maybe_single()
+                .execute()
+            )
+            if existing and existing.data:
+                deactivated_key_id = existing.data["id"]
+                client.table("provider_keys").update(
+                    {"is_active": False}
+                ).eq("id", deactivated_key_id).execute()
 
         row_data = {
             "brand_id": str(brand_id),
@@ -133,10 +139,17 @@ async def add_key(
             "is_active": body.make_active,
             "is_valid": is_valid,
             "last_validated_at": now,
-            "last_validation_error": None if is_valid else validation_error,
+            "last_validation_error": None if is_valid is True else validation_error,
         }
         result = client.table("provider_keys").insert(row_data).execute()
     except Exception as e:
+        if deactivated_key_id:
+            try:
+                client.table("provider_keys").update(
+                    {"is_active": True}
+                ).eq("id", deactivated_key_id).execute()
+            except Exception:
+                logger.error("Failed to re-activate key %s during rollback", deactivated_key_id)
         # Best-effort cleanup of orphaned vault secret
         try:
             delete_secret(vault_secret_id)
@@ -170,11 +183,12 @@ async def validate_key(
 
     now = datetime.now(timezone.utc)
 
-    update_data = {
-        "is_valid": is_valid,
+    update_data: dict = {
         "last_validated_at": now.isoformat(),
-        "last_validation_error": None if is_valid else error_message,
+        "last_validation_error": None if is_valid is True else error_message,
     }
+    if is_valid is not None:
+        update_data["is_valid"] = is_valid
     client = get_service_client()
     client.table("provider_keys").update(update_data).eq("id", str(key_id)).execute()
 
@@ -200,15 +214,21 @@ async def activate_key(
 
     client = get_service_client()
 
-    client.table("provider_keys").update(
-        {"is_active": False}
-    ).eq(
-        "brand_id", str(brand_id)
-    ).eq(
-        "provider", key["provider"]
-    ).eq(
-        "is_active", True
-    ).execute()
+    existing = (
+        client.table("provider_keys")
+        .select("id")
+        .eq("brand_id", str(brand_id))
+        .eq("provider", key["provider"])
+        .eq("is_active", True)
+        .maybe_single()
+        .execute()
+    )
+    deactivated_key_id = existing.data["id"] if existing and existing.data else None
+
+    if deactivated_key_id:
+        client.table("provider_keys").update(
+            {"is_active": False}
+        ).eq("id", deactivated_key_id).execute()
 
     try:
         result = (
@@ -218,6 +238,13 @@ async def activate_key(
             .execute()
         )
     except Exception as e:
+        if deactivated_key_id:
+            try:
+                client.table("provider_keys").update(
+                    {"is_active": True}
+                ).eq("id", deactivated_key_id).execute()
+            except Exception:
+                logger.error("Failed to re-activate key %s during rollback", deactivated_key_id)
         if "uq_provider_keys_one_active" in str(e):
             raise _error_response(409, "ACTIVE_KEY_CONFLICT", "Another key is already active for this provider") from e
         raise
@@ -236,7 +263,8 @@ async def delete_key(
     try:
         delete_secret(key["vault_secret_id"])
     except Exception as e:
-        logger.warning("Failed to delete vault secret %s: %s", key["vault_secret_id"], e)
+        logger.error("Failed to delete vault secret %s: %s", key["vault_secret_id"], e)
+        raise _error_response(502, "VAULT_ERROR", "Failed to delete key from vault — please retry") from e
 
     client = get_service_client()
     client.table("provider_keys").delete().eq("id", str(key_id)).execute()

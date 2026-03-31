@@ -5,7 +5,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-async def validate_openai_key(api_key: str) -> tuple[bool, str | None]:
+async def validate_openai_key(api_key: str) -> tuple[bool | None, str | None]:
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(
@@ -22,13 +22,13 @@ async def validate_openai_key(api_key: str) -> tuple[bool, str | None]:
                 return (False, message)
             return (False, f"Unexpected status code: {resp.status_code}")
     except httpx.TimeoutException:
-        return (False, "Provider API timed out")
+        return (None, "Provider API timed out")
     except httpx.HTTPError:
         logger.exception("OpenAI validation request failed")
-        return (False, "Provider API request failed")
+        return (None, "Provider API request failed")
 
 
-async def validate_gemini_key(api_key: str) -> tuple[bool, str | None]:
+async def validate_gemini_key(api_key: str) -> tuple[bool | None, str | None]:
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(
@@ -47,13 +47,13 @@ async def validate_gemini_key(api_key: str) -> tuple[bool, str | None]:
                 return (False, message)
             return (False, f"Unexpected status code: {resp.status_code}")
     except httpx.TimeoutException:
-        return (False, "Provider API timed out")
+        return (None, "Provider API timed out")
     except httpx.HTTPError:
         logger.exception("Gemini validation request failed")
-        return (False, "Provider API request failed")
+        return (None, "Provider API request failed")
 
 
-async def validate_provider_key(provider: str, api_key: str) -> tuple[bool, str | None]:
+async def validate_provider_key(provider: str, api_key: str) -> tuple[bool | None, str | None]:
     logger.debug("Validating %s key", provider)
     if provider == "openai":
         return await validate_openai_key(api_key)
