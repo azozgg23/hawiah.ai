@@ -20,9 +20,15 @@ def _error_response(status_code: int, code: str, message: str) -> HTTPException:
 @router.get("/me", response_model=ProfileResponse)
 async def get_profile(current_user: User = Depends(get_current_user)):
     client = get_service_client()
-    result = client.table("profiles").select("*").eq("user_id", current_user.id).single().execute()
+    result = (
+        client.table("profiles")
+        .select("*")
+        .eq("user_id", current_user.id)
+        .maybe_single()
+        .execute()
+    )
 
-    if not result.data:
+    if result is None or result.data is None:
         raise _error_response(
             status.HTTP_404_NOT_FOUND,
             "PROFILE_NOT_FOUND",
