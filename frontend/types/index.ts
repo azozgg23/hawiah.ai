@@ -24,7 +24,7 @@ export interface Brand {
   id: string
   name: string
   logo_url: string | null
-  kit_status: string
+  kit_status: KitStatus
   created_at: string
   updated_at: string
 }
@@ -33,7 +33,7 @@ export interface BrandListItem {
   id: string
   name: string
   logo_url: string | null
-  kit_status: string
+  kit_status: KitStatus
   created_at: string
 }
 

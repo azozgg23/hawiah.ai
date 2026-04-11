@@ -63,10 +63,18 @@ export function KitWizard({ brandId, brandName, initialKit }: KitWizardProps) {
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (!isDirtyRef.current) return
-      const target = (e.target as HTMLElement).closest('a')
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      if (!(e.target instanceof Element)) return
+      const target = e.target.closest('a') as HTMLAnchorElement | null
       if (!target) return
       const href = target.getAttribute('href')
-      if (!href || href.startsWith('#')) return
+      if (!href || href.startsWith('#') || target.target === '_blank' || target.hasAttribute('download')) return
+      const url = new URL(target.href, window.location.href)
+      if (
+        url.origin === window.location.origin &&
+        url.pathname === window.location.pathname &&
+        url.search === window.location.search
+      ) return
       const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?')
       if (!confirmed) {
         e.preventDefault()

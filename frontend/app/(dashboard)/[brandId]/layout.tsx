@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { KitStatusBadge } from '@/components/kit/kit-status-badge'
+import { Brand } from '@/types'
 
 async function getServerApiUrl(path: string) {
   const serverBase = process.env.NEXT_SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL
@@ -68,7 +69,11 @@ async function ensureBrandAccess(brandId: string) {
     throw new Error('Failed to load brand')
   }
 
-  return response.json()
+  const brand = (await response.json()) as Brand
+  if (!brand.kit_status || !['not_started', 'in_progress', 'complete'].includes(brand.kit_status)) {
+    throw new Error('Invalid brand payload: missing or invalid kit_status')
+  }
+  return brand
 }
 
 export default async function BrandLayout({
