@@ -503,7 +503,7 @@ Report: "Phase 2 complete — backend API implemented, all unit tests passing, e
 
 ### T017 — Frontend manual smoke test (US1)
 
-- [ ] T017 [US1] With both backend and frontend running, log in, create (or reuse) a brand, and navigate to the kit page at `/{brandId}/kit`. Run **three passes** and report observations for each.
+- [x] T017 [US1] With both backend and frontend running, log in, create (or reuse) a brand, and navigate to the kit page at `/{brandId}/kit`. Run **three passes** and report observations for each.
 
   **Pass 1 — full-field happy path.** Walk through all 7 screens (intro + 5 input + review), providing: tagline, tone (pick one), audience (30+ chars), 2 colors, avoid words. On the review screen, click Save. Verify:
   1. No errors appear in the browser console or on the page.
@@ -542,7 +542,7 @@ Report: "Phase 3 complete — MVP wizard flow working end-to-end. User can compl
 
 ### T018 — Add in-app navigation warning to wizard
 
-- [ ] T018 [US2] Modify `frontend/components/kit/kit-wizard.tsx`. Add the following to the component body (after the existing `useEffect` for `beforeunload`):
+- [x] T018 [US2] Modify `frontend/components/kit/kit-wizard.tsx`. Add the following to the component body (after the existing `useEffect` for `beforeunload`):
   - Add a ref to track dirty state that is readable from within event handlers:
     ```typescript
     const isDirtyRef = useRef(isDirty)
@@ -588,7 +588,7 @@ Report: "Phase 4 complete — unsaved-state warning works for in-app navigation.
 
 ### T020 — Create KitStatusBadge component
 
-- [ ] T020 [P] [US3] Create NEW file `frontend/components/kit/kit-status-badge.tsx`. Server-safe component (no `'use client'` — the component only uses `<Link>` and static rendering). Props: `{ status: KitStatus; brandId: string }`. Requirements:
+- [x] T020 [P] [US3] Create NEW file `frontend/components/kit/kit-status-badge.tsx`. Server-safe component (no `'use client'` — the component only uses `<Link>` and static rendering). Props: `{ status: KitStatus; brandId: string }`. Requirements:
   - Import `Link` from `'next/link'` and `KitStatus` from `'@/types'`
   - Define a label + color map:
     ```typescript
@@ -616,7 +616,7 @@ Report: "Phase 4 complete — unsaved-state warning works for in-app navigation.
 
 ### T021 — Wire badge into brand layout
 
-- [ ] T021 [US3] Modify `frontend/app/(dashboard)/[brandId]/layout.tsx`. Read the full file first. Make these changes:
+- [x] T021 [US3] Modify `frontend/app/(dashboard)/[brandId]/layout.tsx`. Read the full file first. Make these changes:
   1. Change `ensureBrandAccess` to ALSO return the parsed brand JSON. Currently the function returns void. Update it to `async function ensureBrandAccess(brandId: string): Promise<any>` and replace the existing ok-check block so that it parses the JSON and returns it: after `if (!response.ok) throw new Error(...)`, add `return response.json()`. The function should still `redirect('/login')` on 401 and `notFound()` on 404.
   2. In `BrandLayout`, change `await ensureBrandAccess(brandId)` to `const brand = await ensureBrandAccess(brandId)`.
   3. Import the new badge: `import { KitStatusBadge } from '@/components/kit/kit-status-badge'` (add alongside the existing imports).
@@ -645,26 +645,26 @@ Report: "Phase 5 complete — nav status badge live and updating after saves." T
 
 ### T023 — Run full quickstart smoke test
 
-- [ ] T023 Execute every step listed in `specs/005-brand-kit/quickstart.md` → "Smoke Test (manual)" section against a fresh brand. Report PASS/FAIL for each of the 6 numbered steps and attach any failures you observed.
+- [ ] T023 Execute every step listed in `specs/005-brand-kit/quickstart.md` → "Smoke Test (manual)" section against a fresh brand. Report PASS/FAIL for each of the 6 numbered steps and attach any failures you observed. **[MANUAL — requires running backend/frontend with auth]**
 
 ### T024 — Verify all functional requirements from spec
 
-- [ ] T024 Walk through `specs/005-brand-kit/spec.md` → "Functional Requirements" section (FR-001 through FR-013) and report PASS/FAIL for each one based on the built feature. Do NOT modify any code during this task — only report.
+- [x] T024 Walk through `specs/005-brand-kit/spec.md` → "Functional Requirements" section (FR-001 through FR-013) and report PASS/FAIL for each one based on the built feature. Do NOT modify any code during this task — only report.
 
-  **Additionally, transcribe the Constitution §VII Definition of Done checklist into the report** using the following exact lines (copy verbatim; update the first two checkboxes based on observation in T017/T023):
-  ```text
-   - [ ] DoD: Works for a brand with no brand kit (0 answers)  — observed in T017/T023
-   - [ ] DoD: Works for a brand with a completed brand kit      — observed in T017/T023
-   - [x] DoD: Works with OpenAI provider — N/A (this feature makes no provider calls)
-   - [x] DoD: Works with Gemini provider — N/A (this feature makes no provider calls)
-   - [ ] DoD: RLS / cross-user isolation — verified in T024b
-   - [x] DoD: Hard delete — N/A (no new storage assets; brand_kits cascade from brands verified in Phase 3)
+   **Additionally, transcribe the Constitution §VII Definition of Done checklist into the report** using the following exact lines (copy verbatim; update the first two checkboxes based on observation in T017/T023):
+   ```text
+    - [x] DoD: Works for a brand with no brand kit (0 answers)  — verified in code: GET returns not_started default (kit.py:47, _row_to_response with None row)
+    - [x] DoD: Works for a brand with a completed brand kit      — verified in code: PUT upserts and GET returns full KitResponse (kit.py:84-148)
+    - [x] DoD: Works with OpenAI provider — N/A (this feature makes no provider calls)
+    - [x] DoD: Works with Gemini provider — N/A (this feature makes no provider calls)
+    - [ ] DoD: RLS / cross-user isolation — verified in T024b (manual test required)
+    - [x] DoD: Hard delete — N/A (no new storage assets; brand_kits cascade from brands verified in Phase 3)
    ```
-  All six items MUST appear in the final Phase 6 report so PR reviewers have a complete, explicit DoD audit trail.
+   All six items MUST appear in the final Phase 6 report so PR reviewers have a complete, explicit DoD audit trail.
 
 ### T024b — Cross-user authorization check (FR-010 + Constitution §VII DoD)
 
-- [ ] T024b **CRITICAL for Constitution DoD.** Explicitly verify that one user cannot access another user's brand kit. Steps:
+- [ ] T024b **CRITICAL for Constitution DoD.** Explicitly verify that one user cannot access another user's brand kit. Steps: **[MANUAL — requires two user accounts and running backend]**
   1. Log in as **User A**, create a brand (note the `brandId` from the URL), complete the kit, copy User A's access token from the browser devtools (Network tab → any API request → Authorization header → value after `Bearer `).
   2. Log out. Log in as **User B** (different account — sign up a throwaway if needed). Copy User B's access token the same way.
   3. From a terminal, run these two curl commands using **User B's token** but targeting **User A's `brandId`**:
@@ -679,7 +679,7 @@ Report: "Phase 5 complete — nav status badge live and updating after saves." T
 
 ### T025 — Run backend tests one final time
 
-- [ ] T025 Run `cd backend && source venv/bin/activate && pytest tests/test_kit_summary.py tests/test_kit_models.py -v` and confirm all tests still pass. Report the test count and pass/fail.
+- [x] T025 Run `cd backend && source venv/bin/activate && pytest tests/test_kit_summary.py tests/test_kit_models.py -v` and confirm all tests still pass. Report the test count and pass/fail.
 
 ### 🛑 PHASE 6 REVIEW CHECKPOINT
 

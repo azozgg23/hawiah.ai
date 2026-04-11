@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveKit } from '@/hooks/use-kit'
 import { KitAnswers, BrandKit, KitStatus } from '@/types'
@@ -56,6 +56,34 @@ export function KitWizard({ brandId, brandName, initialKit }: KitWizardProps) {
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [isDirty])
+
+  const isDirtyRef = useRef(isDirty)
+  useEffect(() => { isDirtyRef.current = isDirty }, [isDirty])
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (!isDirtyRef.current) return
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      if (!(e.target instanceof Element)) return
+      const target = e.target.closest('a') as HTMLAnchorElement | null
+      if (!target) return
+      const href = target.getAttribute('href')
+      if (!href || href.startsWith('#') || target.target === '_blank' || target.hasAttribute('download')) return
+      const url = new URL(target.href, window.location.href)
+      if (
+        url.origin === window.location.origin &&
+        url.pathname === window.location.pathname &&
+        url.search === window.location.search
+      ) return
+      const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?')
+      if (!confirmed) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+    document.addEventListener('click', handleClick, true)
+    return () => document.removeEventListener('click', handleClick, true)
+  }, [])
 
   return (
     <div className="flex flex-col gap-6">
