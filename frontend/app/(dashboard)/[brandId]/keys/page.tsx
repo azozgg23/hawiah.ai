@@ -56,7 +56,7 @@ export default function KeysPage() {
     }
   }
 
-  const handleAddClick = (provider: string) => {
+  const handleAddClick = (provider: 'openai' | 'gemini') => {
     setAddModalProvider(provider)
     setShowAddModal(true)
   }

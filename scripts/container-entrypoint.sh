@@ -61,6 +61,7 @@ fi
 
 echo "Starting frontend on port ${FRONTEND_PORT}..."
 cd /app/frontend
+export NEXT_SERVER_API_URL="http://127.0.0.1:${BACKEND_PORT}"
 HOSTNAME=0.0.0.0 PORT="$FRONTEND_PORT" node server.js &
 FRONTEND_PID=$!
 

@@ -4,7 +4,7 @@ SHELL := /bin/bash
 
 IMAGE_NAME ?= basarai
 CONTAINER_NAME ?= basarai-app
-PORT ?= 3000
+APP_PORT ?= 3001
 
 # Docker
 build:
@@ -19,13 +19,12 @@ build:
 up: build
 	docker run -d \
 		--name $(CONTAINER_NAME) \
-		-p $(PORT):3000 \
+		-p $(APP_PORT):3000 \
 		--env-file backend/.env \
 		$(IMAGE_NAME):latest
 
 down:
-	-docker stop $(CONTAINER_NAME) 2>/dev/null
-	-docker rm $(CONTAINER_NAME) 2>/dev/null
+	-docker rm -f $(CONTAINER_NAME) 2>/dev/null || true
 
 logs:
 	docker logs -f $(CONTAINER_NAME)
@@ -39,8 +38,7 @@ health:
 	@docker inspect --format='{{.State.Health.Status}}' $(CONTAINER_NAME) 2>/dev/null || echo "Container not running"
 
 clean:
-	-docker stop $(CONTAINER_NAME) 2>/dev/null
-	-docker rm $(CONTAINER_NAME) 2>/dev/null
+	-docker rm -f $(CONTAINER_NAME) 2>/dev/null || true
 	-docker rmi $(IMAGE_NAME):latest 2>/dev/null
 
 # Local development (no Docker)
