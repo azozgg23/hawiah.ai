@@ -271,7 +271,7 @@ Report: "Phase 2 complete — backend API implemented, all unit tests passing, e
 
 ### T010 — Add TypeScript types for kit
 
-- [ ] T010 [US1] Modify `frontend/types/index.ts`. Append the following types at the end of the file (do not modify or remove anything already there):
+- [x] T010 [US1] Modify `frontend/types/index.ts`. Append the following types at the end of the file (do not modify or remove anything already there):
   ```typescript
   export type ToneOption = 'formal' | 'casual' | 'playful' | 'professional' | 'friendly'
   export type KitStatus = 'not_started' | 'in_progress' | 'complete'
@@ -301,7 +301,7 @@ Report: "Phase 2 complete — backend API implemented, all unit tests passing, e
 
 ### T011 — Create useKit hook
 
-- [ ] T011 [US1] Create NEW file `frontend/hooks/use-kit.ts`. Read `frontend/hooks/use-brand.ts` first and mirror its pattern. Requirements:
+- [x] T011 [US1] Create NEW file `frontend/hooks/use-kit.ts`. Read `frontend/hooks/use-brand.ts` first and mirror its pattern. Requirements:
   - `'use client'` at the top
   - Import `useCallback, useEffect, useState` from `'react'`, `apiRequest` from `'@/lib/api'`, and `BrandKit, KitAnswers, UpsertKitRequest` from `'@/types'`
   - Export `useKit(brandId: string)` that returns `{ kit, loading, error, refetch }` by calling `GET /brands/${brandId}/kit`
@@ -309,7 +309,7 @@ Report: "Phase 2 complete — backend API implemented, all unit tests passing, e
 
 ### T012 — Create ColorSlot component
 
-- [ ] T012 [P] [US1] Create NEW file `frontend/components/kit/color-slot.tsx`. Client component. Props: `{ value: string; onChange: (hex: string) => void; onRemove: () => void }`. Requirements:
+- [x] T012 [P] [US1] Create NEW file `frontend/components/kit/color-slot.tsx`. Client component. Props: `{ value: string; onChange: (hex: string) => void; onRemove: () => void }`. Requirements:
   - `'use client'` at the top
   - Use Tailwind classes for layout
   - Render a flex container with three children side by side:
@@ -320,7 +320,7 @@ Report: "Phase 2 complete — backend API implemented, all unit tests passing, e
 
 ### T013 — Create wizard step components (screens 1–6, review screen is T014)
 
-- [ ] T013 [P] [US1] Create NEW directory `frontend/components/kit/steps/` and NEW files for each screen below. All are client components (`'use client'`). **Use named exports** (e.g., `export function StepName(...)`) — NOT default exports, because `kit-wizard.tsx` imports them by name. Each step receives these props:
+- [x] T013 [P] [US1] Create NEW directory `frontend/components/kit/steps/` and NEW files for each screen below. All are client components (`'use client'`). **Use named exports** (e.g., `export function StepName(...)`) — NOT default exports, because `kit-wizard.tsx` imports them by name. Each step receives these props:
   ```typescript
   interface StepProps {
     answers: KitAnswers
@@ -344,7 +344,7 @@ Report: "Phase 2 complete — backend API implemented, all unit tests passing, e
 
 ### T014 — Create review step component
 
-- [ ] T014 [US1] Create NEW file `frontend/components/kit/steps/step-review.tsx`. Client component. **Named export** `StepReview`. StepReview does NOT import `StepProps` from anywhere — declare a local `StepReviewProps` interface inline (the steps from T013 do not export a shared props type; each step accepts the same shape inline). Use this interface:
+- [x] T014 [US1] Create NEW file `frontend/components/kit/steps/step-review.tsx`. Client component. **Named export** `StepReview`. StepReview does NOT import `StepProps` from anywhere — declare a local `StepReviewProps` interface inline (the steps from T013 do not export a shared props type; each step accepts the same shape inline). Use this interface:
   ```typescript
   interface StepReviewProps {
     answers: KitAnswers
@@ -416,7 +416,7 @@ Report: "Phase 2 complete — backend API implemented, all unit tests passing, e
 
 ### T015 — Create kit wizard container
 
-- [ ] T015 [US1] Create NEW file `frontend/components/kit/kit-wizard.tsx`. Client component. Props: `{ brandId: string; brandName: string; initialKit: BrandKit }`. Requirements:
+- [x] T015 [US1] Create NEW file `frontend/components/kit/kit-wizard.tsx`. Client component. Props: `{ brandId: string; brandName: string; initialKit: BrandKit }`. Requirements:
   - `'use client'` at the top
   - Imports (exact list — do not omit any):
     ```typescript
@@ -491,7 +491,7 @@ Report: "Phase 2 complete — backend API implemented, all unit tests passing, e
 
 ### T016 — Create kit page
 
-- [ ] T016 [US1] Create NEW directory and file `frontend/app/(dashboard)/[brandId]/kit/page.tsx`. Client component. Requirements:
+- [x] T016 [US1] Create NEW directory and file `frontend/app/(dashboard)/[brandId]/kit/page.tsx`. Client component. Requirements:
   - `'use client'` at the top
   - Imports: `useParams` from `'next/navigation'`, `useKit` from `'@/hooks/use-kit'`, `KitWizard` from `'@/components/kit/kit-wizard'`
   - Get `brandId` from `useParams()` as a string (handle array case the same way the keys page does: `Array.isArray(params.brandId) ? params.brandId[0] : params.brandId ?? ''`)
