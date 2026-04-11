@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveKit } from '@/hooks/use-kit'
 import { KitAnswers, BrandKit, KitStatus } from '@/types'
@@ -56,6 +56,26 @@ export function KitWizard({ brandId, brandName, initialKit }: KitWizardProps) {
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [isDirty])
+
+  const isDirtyRef = useRef(isDirty)
+  useEffect(() => { isDirtyRef.current = isDirty }, [isDirty])
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (!isDirtyRef.current) return
+      const target = (e.target as HTMLElement).closest('a')
+      if (!target) return
+      const href = target.getAttribute('href')
+      if (!href || href.startsWith('#')) return
+      const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?')
+      if (!confirmed) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+    document.addEventListener('click', handleClick, true)
+    return () => document.removeEventListener('click', handleClick, true)
+  }, [])
 
   return (
     <div className="flex flex-col gap-6">

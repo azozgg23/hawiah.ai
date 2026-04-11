@@ -503,7 +503,7 @@ Report: "Phase 2 complete — backend API implemented, all unit tests passing, e
 
 ### T017 — Frontend manual smoke test (US1)
 
-- [ ] T017 [US1] With both backend and frontend running, log in, create (or reuse) a brand, and navigate to the kit page at `/{brandId}/kit`. Run **three passes** and report observations for each.
+- [x] T017 [US1] With both backend and frontend running, log in, create (or reuse) a brand, and navigate to the kit page at `/{brandId}/kit`. Run **three passes** and report observations for each.
 
   **Pass 1 — full-field happy path.** Walk through all 7 screens (intro + 5 input + review), providing: tagline, tone (pick one), audience (30+ chars), 2 colors, avoid words. On the review screen, click Save. Verify:
   1. No errors appear in the browser console or on the page.
@@ -542,7 +542,7 @@ Report: "Phase 3 complete — MVP wizard flow working end-to-end. User can compl
 
 ### T018 — Add in-app navigation warning to wizard
 
-- [ ] T018 [US2] Modify `frontend/components/kit/kit-wizard.tsx`. Add the following to the component body (after the existing `useEffect` for `beforeunload`):
+- [x] T018 [US2] Modify `frontend/components/kit/kit-wizard.tsx`. Add the following to the component body (after the existing `useEffect` for `beforeunload`):
   - Add a ref to track dirty state that is readable from within event handlers:
     ```typescript
     const isDirtyRef = useRef(isDirty)
