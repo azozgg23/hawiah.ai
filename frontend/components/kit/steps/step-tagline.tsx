@@ -15,7 +15,11 @@ export function StepTagline({ answers, onChange }: StepProps) {
       <p className="text-sm text-muted-foreground">
         What is your brand&apos;s tagline or slogan? (optional)
       </p>
+      <label htmlFor="kit-tagline" className="text-sm font-medium">
+        Tagline (optional)
+      </label>
       <input
+        id="kit-tagline"
         type="text"
         value={answers.tagline ?? ''}
         maxLength={160}

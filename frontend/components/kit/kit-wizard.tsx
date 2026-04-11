@@ -34,6 +34,7 @@ export function KitWizard({ brandId, brandName, initialKit }: KitWizardProps) {
   }, [])
 
   const handleSave = async () => {
+    if (saving) return
     setSaving(true)
     setSaveError(null)
     try {

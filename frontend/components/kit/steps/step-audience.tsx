@@ -15,7 +15,11 @@ export function StepAudience({ answers, onChange }: StepProps) {
       <p className="text-sm text-muted-foreground">
         Who is your target audience?
       </p>
+      <label htmlFor="kit-audience" className="text-sm font-medium">
+        Audience
+      </label>
       <textarea
+        id="kit-audience"
         value={answers.audience ?? ''}
         maxLength={500}
         onChange={(e) => onChange({ audience: e.target.value || null })}

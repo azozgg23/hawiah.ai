@@ -29,6 +29,7 @@ export function StepTone({ answers, onChange }: StepProps) {
             key={option.value}
             type="button"
             onClick={() => onChange({ tone: option.value })}
+            aria-pressed={answers.tone === option.value}
             className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
               answers.tone === option.value
                 ? 'border-blue-600 bg-blue-50 text-blue-700'

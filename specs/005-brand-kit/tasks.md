@@ -548,7 +548,7 @@ Report: "Phase 3 complete — MVP wizard flow working end-to-end. User can compl
     const isDirtyRef = useRef(isDirty)
     useEffect(() => { isDirtyRef.current = isDirty }, [isDirty])
     ```
-    Add `useRef` to the react import.
+    Add `useRef` to the React import.
   - Add a second `useEffect` that intercepts clicks on anchor tags (for Next.js `<Link>` which render as `<a>`):
     ```typescript
     useEffect(() => {
