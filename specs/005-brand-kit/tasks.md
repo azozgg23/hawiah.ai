@@ -588,7 +588,7 @@ Report: "Phase 4 complete — unsaved-state warning works for in-app navigation.
 
 ### T020 — Create KitStatusBadge component
 
-- [ ] T020 [P] [US3] Create NEW file `frontend/components/kit/kit-status-badge.tsx`. Server-safe component (no `'use client'` — the component only uses `<Link>` and static rendering). Props: `{ status: KitStatus; brandId: string }`. Requirements:
+- [x] T020 [P] [US3] Create NEW file `frontend/components/kit/kit-status-badge.tsx`. Server-safe component (no `'use client'` — the component only uses `<Link>` and static rendering). Props: `{ status: KitStatus; brandId: string }`. Requirements:
   - Import `Link` from `'next/link'` and `KitStatus` from `'@/types'`
   - Define a label + color map:
     ```typescript
@@ -616,7 +616,7 @@ Report: "Phase 4 complete — unsaved-state warning works for in-app navigation.
 
 ### T021 — Wire badge into brand layout
 
-- [ ] T021 [US3] Modify `frontend/app/(dashboard)/[brandId]/layout.tsx`. Read the full file first. Make these changes:
+- [x] T021 [US3] Modify `frontend/app/(dashboard)/[brandId]/layout.tsx`. Read the full file first. Make these changes:
   1. Change `ensureBrandAccess` to ALSO return the parsed brand JSON. Currently the function returns void. Update it to `async function ensureBrandAccess(brandId: string): Promise<any>` and replace the existing ok-check block so that it parses the JSON and returns it: after `if (!response.ok) throw new Error(...)`, add `return response.json()`. The function should still `redirect('/login')` on 401 and `notFound()` on 404.
   2. In `BrandLayout`, change `await ensureBrandAccess(brandId)` to `const brand = await ensureBrandAccess(brandId)`.
   3. Import the new badge: `import { KitStatusBadge } from '@/components/kit/kit-status-badge'` (add alongside the existing imports).
