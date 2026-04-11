@@ -74,3 +74,28 @@ export interface ValidateKeyResponse {
   error: string | null
   key_id: string
 }
+
+export type ToneOption = 'formal' | 'casual' | 'playful' | 'professional' | 'friendly'
+export type KitStatus = 'not_started' | 'in_progress' | 'complete'
+
+export interface KitAnswers {
+  tagline: string | null
+  tone: ToneOption | null
+  audience: string | null
+  colors: string[]
+  avoid_words: string | null
+}
+
+export interface BrandKit {
+  brand_id: string
+  brand_name: string
+  answers: KitAnswers
+  summary: string | null
+  status: KitStatus
+  completed_at: string | null
+  updated_at: string | null
+}
+
+export interface UpsertKitRequest {
+  answers: KitAnswers
+}
