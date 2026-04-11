@@ -17,7 +17,10 @@ def gemini_generate(
     model: str,
 ) -> ProviderResult:
     logger.info("gemini_generate: model=%s aspect_ratio=%s", model, aspect_ratio)
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(
+        api_key=api_key,
+        http_options=genai_types.HttpOptions(timeout=120000),
+    )
     response = client.models.generate_content(
         model=model,
         contents=[prompt],

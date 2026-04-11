@@ -28,7 +28,7 @@ def test_timeout_exception():
 
 def test_connect_error_is_network():
     exc = httpx.ConnectError("connection refused")
-    code, msg = classify_provider_error(exc)
+    code, _ = classify_provider_error(exc)
     assert code == "NETWORK"
 
 

@@ -10,6 +10,12 @@ logger = logging.getLogger(__name__)
 OPENAI_IMAGES_URL = "https://api.openai.com/v1/images/generations"
 
 
+def _openai_size(width: int, height: int) -> str:
+    if width == height:
+        return "1024x1024"
+    return "1536x1024" if width > height else "1024x1536"
+
+
 async def openai_generate(
     *,
     api_key: str,
@@ -26,7 +32,7 @@ async def openai_generate(
             json={
                 "model": model,
                 "prompt": prompt,
-                "size": f"{width}x{height}",
+                "size": _openai_size(width, height),
                 "response_format": "b64_json",
                 "n": 1,
             },

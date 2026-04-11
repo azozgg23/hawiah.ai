@@ -277,20 +277,32 @@ async def generate_image(
             .execute()
         )
 
-        client.table("provider_keys").update({"last_used_at": now_iso}).eq(
-            "id", active_key["id"]
-        ).execute()
+        try:
+            client.table("provider_keys").update({"last_used_at": now_iso}).eq(
+                "id", active_key["id"]
+            ).execute()
+        except Exception:
+            logger.warning(
+                "Failed to update last_used_at for key %s (non-critical)",
+                active_key["id"],
+            )
 
         row = updated.data[0] if updated.data else None
         if row is None:
-            row = (
-                client.table("generations")
-                .select("*")
-                .eq("id", str(generation_id))
-                .single()
-                .execute()
-                .data
-            )
+            try:
+                row = (
+                    client.table("generations")
+                    .select("*")
+                    .eq("id", str(generation_id))
+                    .single()
+                    .execute()
+                    .data
+                )
+            except Exception:
+                logger.warning(
+                    "Failed to re-fetch generation %s after success update",
+                    generation_id,
+                )
         logger.info(
             "generate success generation_id=%s brand_id=%s",
             generation_id, brand_id,

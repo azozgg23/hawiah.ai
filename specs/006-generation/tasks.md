@@ -322,8 +322,9 @@ Report: "Phase 1 complete — branch verified, 10 reference files read." Then ST
             if status == 429:
                 return ("RATE_LIMITED", ERROR_USER_MESSAGES["RATE_LIMITED"])
             if status in (400, 422):
-                # 400/422 are commonly used for content-policy blocks; the body text
-                # is NOT inspected — we deliberately keep this coarse-grained.
+                # 400/422 are commonly used for content-policy blocks; inspect the
+                # body for policy-related keywords before falling back to a generic
+                # client error.
                 body = exc.response.text.lower() if exc.response is not None else ""
                 if "policy" in body or "safety" in body or "blocked" in body:
                     return ("CONTENT_POLICY", ERROR_USER_MESSAGES["CONTENT_POLICY"])

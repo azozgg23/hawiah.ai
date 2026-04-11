@@ -11,9 +11,11 @@ def apply_watermark(image_bytes: bytes, logo_bytes: bytes) -> bytes:
     base = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
     logo = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
 
-    target_logo_w = max(1, int(round(base.width * WATERMARK_SCALE)))
-    ratio = target_logo_w / logo.width
-    target_logo_h = max(1, int(round(logo.height * ratio)))
+    max_logo_w = max(1, round(base.width * WATERMARK_SCALE))
+    max_logo_h = max(1, base.height - (2 * WATERMARK_MARGIN_PX))
+    scale = min(max_logo_w / logo.width, max_logo_h / logo.height)
+    target_logo_w = max(1, round(logo.width * scale))
+    target_logo_h = max(1, round(logo.height * scale))
     logo = logo.resize(
         (target_logo_w, target_logo_h), Image.Resampling.LANCZOS
     )

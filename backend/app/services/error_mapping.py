@@ -23,6 +23,15 @@ def classify_provider_error(exc: Exception) -> tuple[str, str]:
         status = exc.response.status_code
         if status == 401:
             return ("INVALID_KEY", ERROR_USER_MESSAGES["INVALID_KEY"])
+        if status == 403:
+            body = exc.response.text.lower() if exc.response is not None else ""
+            if (
+                "api key" in body
+                or "permission" in body
+                or "credential" in body
+            ):
+                return ("INVALID_KEY", ERROR_USER_MESSAGES["INVALID_KEY"])
+            return ("PROVIDER_CLIENT_ERROR", ERROR_USER_MESSAGES["PROVIDER_CLIENT_ERROR"])
         if status == 429:
             return ("RATE_LIMITED", ERROR_USER_MESSAGES["RATE_LIMITED"])
         if status in (400, 422):
