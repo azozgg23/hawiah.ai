@@ -6,7 +6,7 @@
 
 The `brand_kits` table was created in Phase 1. This feature reads and writes to it via upsert.
 
-```
+```text
 brand_kits
 ├── brand_id         UUID (PK, FK → brands.id ON DELETE CASCADE)
 ├── tagline          TEXT | NULL  (max 160 chars)
@@ -126,12 +126,12 @@ Computed by the backend on every upsert — never supplied by the client.
 
 Computed by `backend/app/services/kit_summary.py`. Called on every upsert.
 
-```
+```text
 Brand: {brand_name}
 Tagline: {tagline or "None specified"}
-Tone: {tone}
-Audience: {audience}
-Colors: {", ".join(colors)}
+Tone: {tone or "None specified"}
+Audience: {audience or "None specified"}
+Colors: {", ".join(colors) or "None specified"}
 Avoid: {avoid_words or "None specified"}
 ```
 
@@ -141,7 +141,7 @@ Returns `None` (not persisted) when status is `not_started`. Returns the derived
 
 ## Entity Relationships
 
-```
+```text
 brands (1) ─────────────── (1) brand_kits
   id ◄────────────────────── brand_id (PK + FK)
   name ──── read for summary

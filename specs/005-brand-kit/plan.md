@@ -125,7 +125,7 @@ Create a pure utility module — no FastAPI, no DB calls.
 **`derive_summary(brand_name, answers) → str | None`**:
 - Returns `None` if status is `not_started`
 - Formats the 6-line template per the implementation plan spec:
-  ```
+  ```text
   Brand: {brand_name}
   Tagline: {tagline or "None specified"}
   Tone: {tone}
@@ -217,7 +217,7 @@ Follow the `use-brand.ts` pattern:
 
 #### B.3 — `ColorSlot` Component (`frontend/components/kit/color-slot.tsx`)
 
-```
+```text
 Props: { value: string; onChange: (hex: string) => void; onRemove: () => void }
 ```
 - Renders `<input type="color">` + `<input type="text">` side by side
@@ -241,7 +241,7 @@ Each screen receives `{ answers: KitAnswers; onChange: (partial: Partial<KitAnsw
 
 #### B.5 — Wizard Container (`frontend/components/kit/kit-wizard.tsx`)
 
-```
+```text
 Props: { brandId: string; brandName: string; initialKit: BrandKit }
 ```
 
@@ -261,7 +261,7 @@ Behavior:
 
 #### B.6 — Kit Status Badge (`frontend/components/kit/kit-status-badge.tsx`)
 
-```
+```text
 Props: { status: KitStatus; brandId: string }
 ```
 

@@ -59,7 +59,7 @@ No blocking unknowns. All decisions resolved via codebase inspection and clarifi
 **Alternatives considered**:
 - Client-side state propagation (Context API): Would require restructuring the layout — overkill.
 - Polling: Unnecessary complexity.
-- Full `router.push` navigation: Causes full page reload — rejected per SC-003.
+- Full `router.push` navigation: Causes full-page reload — rejected per SC-003.
 
 ---
 

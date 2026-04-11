@@ -43,5 +43,7 @@ def test_avoid_words_too_long():
 
 
 def test_empty_strings_become_none():
-    answers = KitAnswers(tagline="   ")
+    answers = KitAnswers(tagline="   ", audience="   ", avoid_words="   ")
     assert answers.tagline is None
+    assert answers.audience is None
+    assert answers.avoid_words is None

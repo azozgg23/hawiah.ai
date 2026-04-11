@@ -12,7 +12,7 @@ Retrieve the brand kit for a brand. If no kit record exists yet, returns a defau
 
 ### Request
 
-```
+```http
 GET /brands/{brand_id}/kit
 Authorization: Bearer <token>
 ```
@@ -71,7 +71,7 @@ Upsert (create or replace) the brand kit answers. The backend derives the `statu
 
 ### Request
 
-```
+```http
 PUT /brands/{brand_id}/kit
 Authorization: Bearer <token>
 Content-Type: application/json

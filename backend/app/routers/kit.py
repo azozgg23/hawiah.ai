@@ -88,6 +88,17 @@ async def upsert_kit(
     current_user: User = Depends(get_current_user),
 ):
     brand = _get_brand_or_404(brand_id, current_user.id)
+    client = get_service_client()
+
+    existing_result = (
+        client.table("brand_kits")
+        .select("status, completed_at")
+        .eq("brand_id", str(brand_id))
+        .maybe_single()
+        .execute()
+    )
+    existing = existing_result.data if existing_result is not None else None
+
     a = body.answers
     new_status = derive_status(
         tagline=a.tagline,
@@ -105,7 +116,17 @@ async def upsert_kit(
         avoid_words=a.avoid_words,
     )
     now = datetime.now(timezone.utc)
-    completed_at = now.isoformat() if new_status == KitStatusEnum.complete else None
+    if new_status == KitStatusEnum.complete:
+        if (
+            existing
+            and existing.get("status") == KitStatusEnum.complete.value
+            and existing.get("completed_at") is not None
+        ):
+            completed_at = existing["completed_at"]
+        else:
+            completed_at = now.isoformat()
+    else:
+        completed_at = None
 
     payload = {
         "brand_id": str(brand_id),
@@ -118,8 +139,6 @@ async def upsert_kit(
         "status": new_status.value,
         "completed_at": completed_at,
     }
-
-    client = get_service_client()
     result = (
         client.table("brand_kits")
         .upsert(payload, on_conflict="brand_id")

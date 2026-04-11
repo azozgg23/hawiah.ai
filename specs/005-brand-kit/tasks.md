@@ -652,14 +652,14 @@ Report: "Phase 5 complete — nav status badge live and updating after saves." T
 - [ ] T024 Walk through `specs/005-brand-kit/spec.md` → "Functional Requirements" section (FR-001 through FR-013) and report PASS/FAIL for each one based on the built feature. Do NOT modify any code during this task — only report.
 
   **Additionally, transcribe the Constitution §VII Definition of Done checklist into the report** using the following exact lines (copy verbatim; update the first two checkboxes based on observation in T017/T023):
-  ```
-  - [ ] DoD: Works for a brand with no brand kit (0 answers)  — observed in T017/T023
-  - [ ] DoD: Works for a brand with a completed brand kit      — observed in T017/T023
-  - [x] DoD: Works with OpenAI provider — N/A (this feature makes no provider calls)
-  - [x] DoD: Works with Gemini provider — N/A (this feature makes no provider calls)
-  - [ ] DoD: RLS / cross-user isolation — verified in T024b
-  - [x] DoD: Hard delete — N/A (no new storage assets; brand_kits cascade from brands verified in Phase 3)
-  ```
+  ```text
+   - [ ] DoD: Works for a brand with no brand kit (0 answers)  — observed in T017/T023
+   - [ ] DoD: Works for a brand with a completed brand kit      — observed in T017/T023
+   - [x] DoD: Works with OpenAI provider — N/A (this feature makes no provider calls)
+   - [x] DoD: Works with Gemini provider — N/A (this feature makes no provider calls)
+   - [ ] DoD: RLS / cross-user isolation — verified in T024b
+   - [x] DoD: Hard delete — N/A (no new storage assets; brand_kits cascade from brands verified in Phase 3)
+   ```
   All six items MUST appear in the final Phase 6 report so PR reviewers have a complete, explicit DoD audit trail.
 
 ### T024b — Cross-user authorization check (FR-010 + Constitution §VII DoD)

@@ -53,7 +53,7 @@ pytest tests/test_kit_summary.py tests/test_kit_models.py -v
 
 ## API Endpoints
 
-```
+```text
 GET  /brands/{id}/kit   — Fetch kit (returns not_started default if no row)
 PUT  /brands/{id}/kit   — Upsert kit answers
 ```
