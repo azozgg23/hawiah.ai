@@ -14,7 +14,12 @@ logger = logging.getLogger(__name__)
 
 security = HTTPBearer(auto_error=False)
 
-_jwks_client = PyJWKClient(f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json")
+_jwks_client = PyJWKClient(
+    f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json",
+    cache_jwk_set=True,
+    lifespan=3600,
+    timeout=5,
+)
 
 
 class User(BaseModel):

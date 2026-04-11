@@ -48,3 +48,29 @@ export interface UpdateBrandRequest {
 export interface LogoUploadResponse {
   logo_url: string
 }
+
+export interface ProviderKey {
+  id: string
+  provider: 'openai' | 'gemini'
+  label: string | null
+  key_hint: string | null
+  is_active: boolean
+  is_valid: boolean | null
+  last_validated_at: string | null
+  last_validation_error: string | null
+  created_at: string
+}
+
+export interface AddKeyRequest {
+  provider: 'openai' | 'gemini'
+  key: string
+  label?: string | null
+  make_active?: boolean
+}
+
+export interface ValidateKeyResponse {
+  valid: boolean
+  validated_at: string
+  error: string | null
+  key_id: string
+}

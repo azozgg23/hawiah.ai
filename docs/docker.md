@@ -40,13 +40,13 @@ docker build \
 ```bash
 docker run -d \
   --name basarai \
-  -p 3000:3000 \
+  -p 3001:3000 \
   -e SUPABASE_URL=https://your-project.supabase.co \
   -e SUPABASE_SECRET_KEY=sb_secret_... \
   basarai:latest
 ```
 
-The application is available at `http://localhost:3000`.
+The application is available at `http://localhost:3001`.
 
 ### Runtime Environment Variables
 
@@ -56,6 +56,7 @@ The application is available at `http://localhost:3000`.
 | `SUPABASE_SECRET_KEY` | Yes | — | Server-side Supabase key (bypasses RLS) |
 | `STORAGE_BUCKET` | No | `brand-assets` | Storage bucket name |
 | `ADMIN_EMAILS` | No | (empty) | Comma-separated operator emails |
+| `CORS_ORIGINS` | No | `http://localhost:3001,...` | Comma-separated allowed origins (must match the host port you expose) |
 
 **Security**: Never commit runtime secrets to version control. Use environment files or secret management systems.
 
@@ -190,7 +191,7 @@ Bunny Magic handles HTTPS termination. The container serves HTTP only.
 ## Architecture Notes
 
 - **Backend binding**: `127.0.0.1:8000` (internal-only)
-- **Frontend binding**: `0.0.0.0:3000` (publicly accessible)
+- **Frontend binding**: `0.0.0.0:3000` (publicly accessible, mapped to host port `3001` by default)
 - **API proxy**: Next.js rewrites `/api/*` to `http://127.0.0.1:8000/*`
 - **Process management**: `tini` as PID 1 + bash entrypoint script
 - **Image size**: ~560MB (Python 3.13 slim + Node.js 20)

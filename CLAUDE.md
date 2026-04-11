@@ -7,6 +7,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-08
 - N/A (no database changes) (002-dockerization)
 - Python 3.13 (backend), TypeScript 5.x (frontend) + FastAPI 0.109+, Pydantic 2.x, Pillow 10+ (new — for logo resize), supabase-py 2.3+, Next.js 14 (App Router), @supabase/ssr, shadcn/ui, Tailwind CSS, zod, react-hook-form (003-brand-crud)
 - Supabase (PostgreSQL) for data, Supabase Storage (`brand-assets` bucket) for logos (003-brand-crud)
+- Python 3.13 (backend), TypeScript 5.x (frontend) + FastAPI 0.109+, Pydantic 2.x, supabase-py 2.3+, httpx (async HTTP for provider validation), Next.js 14 (App Router), @supabase/ssr, shadcn/ui, Tailwind CSS, zod, react-hook-form (004-provider-keys)
+- Supabase PostgreSQL (`provider_keys` table, already migrated), Supabase Vault (encrypted key storage via RPC wrappers) (004-provider-keys)
 
 - Python 3.13 (backend), TypeScript 5.x (frontend) + FastAPI 0.109+, Next.js 14 (App Router), @supabase/ssr, @supabase/supabase-js, PyJWT, supabase-py, shadcn/ui, Tailwind CSS (001-foundation)
 
@@ -33,10 +35,10 @@ cd frontend && npm run dev
 Python 3.13 (backend), TypeScript 5.x (frontend): Follow standard conventions
 
 ## Recent Changes
+- 004-provider-keys: Added Python 3.13 (backend), TypeScript 5.x (frontend) + FastAPI 0.109+, Pydantic 2.x, supabase-py 2.3+, httpx (async HTTP for provider validation), Next.js 14 (App Router), @supabase/ssr, shadcn/ui, Tailwind CSS, zod, react-hook-form
 - 003-brand-crud: Added Python 3.13 (backend), TypeScript 5.x (frontend) + FastAPI 0.109+, Pydantic 2.x, Pillow 10+ (new — for logo resize), supabase-py 2.3+, Next.js 14 (App Router), @supabase/ssr, shadcn/ui, Tailwind CSS, zod, react-hook-form
 - 002-dockerization: Added Dockerfile, Bash (entrypoint); modifies Python 3.13 backend + TypeScript/Next.js 14 frontend configs + Docker (multi-stage build), tini (PID 1 init), Node.js 20, Python 3.13, uvicorn
 
-- 001-foundation: Added Python 3.13 (backend), TypeScript 5.x (frontend) + FastAPI 0.109+, Next.js 14 (App Router), @supabase/ssr, @supabase/supabase-js, PyJWT, supabase-py, shadcn/ui, Tailwind CSS
 
 <!-- MANUAL ADDITIONS START -->
 

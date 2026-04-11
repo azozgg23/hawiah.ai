@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     ADMIN_EMAILS: str = ""
     HOST: str = "127.0.0.1"
     PORT: int = 8000
+    CORS_ORIGINS: str = "http://localhost:3001,http://127.0.0.1:3001,http://localhost,http://localhost:3000"
 
     model_config = SettingsConfigDict(
         env_file=".env",

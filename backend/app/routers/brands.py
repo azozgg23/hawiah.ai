@@ -10,6 +10,7 @@ from postgrest.exceptions import APIError
 from app.config import settings
 from app.core.auth import User, get_current_user
 from app.core.supabase import get_service_client
+from app.core.vault import delete_secret
 from app.models.brand import (
     BrandListItem,
     BrandResponse,
@@ -219,7 +220,7 @@ async def delete_brand(
     )
     for key in keys_result.data or []:
         try:
-            client.rpc("delete_secret", {"secret_id": key["vault_secret_id"]}).execute()
+            delete_secret(key["vault_secret_id"])
         except Exception as e:
             logger.warning(f"Failed to delete vault secret: {e}")
 

@@ -73,9 +73,11 @@ Finally, configure auth redirects in the Dashboard → **Authentication → URL 
 make up
 ```
 
-The app is now running at **http://localhost:3000**.
+The app is now running at **http://localhost:3001**.
 
 Check health: `make health` | View logs: `make logs`
+
+> **Port**: The app is mapped to host port `3001` by default. Override with `make up APP_PORT=<port>`. If you change the port, also update `CORS_ORIGINS` in `backend/.env` to match.
 
 ---
 
