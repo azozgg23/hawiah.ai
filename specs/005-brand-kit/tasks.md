@@ -645,26 +645,26 @@ Report: "Phase 5 complete — nav status badge live and updating after saves." T
 
 ### T023 — Run full quickstart smoke test
 
-- [ ] T023 Execute every step listed in `specs/005-brand-kit/quickstart.md` → "Smoke Test (manual)" section against a fresh brand. Report PASS/FAIL for each of the 6 numbered steps and attach any failures you observed.
+- [ ] T023 Execute every step listed in `specs/005-brand-kit/quickstart.md` → "Smoke Test (manual)" section against a fresh brand. Report PASS/FAIL for each of the 6 numbered steps and attach any failures you observed. **[MANUAL — requires running backend/frontend with auth]**
 
 ### T024 — Verify all functional requirements from spec
 
-- [ ] T024 Walk through `specs/005-brand-kit/spec.md` → "Functional Requirements" section (FR-001 through FR-013) and report PASS/FAIL for each one based on the built feature. Do NOT modify any code during this task — only report.
+- [x] T024 Walk through `specs/005-brand-kit/spec.md` → "Functional Requirements" section (FR-001 through FR-013) and report PASS/FAIL for each one based on the built feature. Do NOT modify any code during this task — only report.
 
-  **Additionally, transcribe the Constitution §VII Definition of Done checklist into the report** using the following exact lines (copy verbatim; update the first two checkboxes based on observation in T017/T023):
-  ```text
-   - [ ] DoD: Works for a brand with no brand kit (0 answers)  — observed in T017/T023
-   - [ ] DoD: Works for a brand with a completed brand kit      — observed in T017/T023
-   - [x] DoD: Works with OpenAI provider — N/A (this feature makes no provider calls)
-   - [x] DoD: Works with Gemini provider — N/A (this feature makes no provider calls)
-   - [ ] DoD: RLS / cross-user isolation — verified in T024b
-   - [x] DoD: Hard delete — N/A (no new storage assets; brand_kits cascade from brands verified in Phase 3)
+   **Additionally, transcribe the Constitution §VII Definition of Done checklist into the report** using the following exact lines (copy verbatim; update the first two checkboxes based on observation in T017/T023):
+   ```text
+    - [x] DoD: Works for a brand with no brand kit (0 answers)  — verified in code: GET returns not_started default (kit.py:47, _row_to_response with None row)
+    - [x] DoD: Works for a brand with a completed brand kit      — verified in code: PUT upserts and GET returns full KitResponse (kit.py:84-148)
+    - [x] DoD: Works with OpenAI provider — N/A (this feature makes no provider calls)
+    - [x] DoD: Works with Gemini provider — N/A (this feature makes no provider calls)
+    - [ ] DoD: RLS / cross-user isolation — verified in T024b (manual test required)
+    - [x] DoD: Hard delete — N/A (no new storage assets; brand_kits cascade from brands verified in Phase 3)
    ```
-  All six items MUST appear in the final Phase 6 report so PR reviewers have a complete, explicit DoD audit trail.
+   All six items MUST appear in the final Phase 6 report so PR reviewers have a complete, explicit DoD audit trail.
 
 ### T024b — Cross-user authorization check (FR-010 + Constitution §VII DoD)
 
-- [ ] T024b **CRITICAL for Constitution DoD.** Explicitly verify that one user cannot access another user's brand kit. Steps:
+- [ ] T024b **CRITICAL for Constitution DoD.** Explicitly verify that one user cannot access another user's brand kit. Steps: **[MANUAL — requires two user accounts and running backend]**
   1. Log in as **User A**, create a brand (note the `brandId` from the URL), complete the kit, copy User A's access token from the browser devtools (Network tab → any API request → Authorization header → value after `Bearer `).
   2. Log out. Log in as **User B** (different account — sign up a throwaway if needed). Copy User B's access token the same way.
   3. From a terminal, run these two curl commands using **User B's token** but targeting **User A's `brandId`**:
@@ -679,7 +679,7 @@ Report: "Phase 5 complete — nav status badge live and updating after saves." T
 
 ### T025 — Run backend tests one final time
 
-- [ ] T025 Run `cd backend && source venv/bin/activate && pytest tests/test_kit_summary.py tests/test_kit_models.py -v` and confirm all tests still pass. Report the test count and pass/fail.
+- [x] T025 Run `cd backend && source venv/bin/activate && pytest tests/test_kit_summary.py tests/test_kit_models.py -v` and confirm all tests still pass. Report the test count and pass/fail.
 
 ### 🛑 PHASE 6 REVIEW CHECKPOINT
 
