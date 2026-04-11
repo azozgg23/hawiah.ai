@@ -69,11 +69,18 @@ async function ensureBrandAccess(brandId: string) {
     throw new Error('Failed to load brand')
   }
 
-  const brand = (await response.json()) as Brand
-  if (!brand.kit_status || !['not_started', 'in_progress', 'complete'].includes(brand.kit_status)) {
+  const payload: unknown = await response.json()
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Invalid brand payload: expected object')
+  }
+  const brand = payload as Partial<Brand>
+  if (
+    !brand.kit_status ||
+    !['not_started', 'in_progress', 'complete'].includes(brand.kit_status)
+  ) {
     throw new Error('Invalid brand payload: missing or invalid kit_status')
   }
-  return brand
+  return brand as Brand
 }
 
 export default async function BrandLayout({
