@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from uuid import uuid4
 
 from app.config import settings
-from app.routers import brands, health, keys, kit, me
+from app.routers import brands, generations, health, keys, kit, me
 
 
 @asynccontextmanager
@@ -34,6 +34,7 @@ app.include_router(me.router, tags=["account"])
 app.include_router(brands.router)
 app.include_router(keys.router)
 app.include_router(kit.router)
+app.include_router(generations.router)
 
 
 @app.exception_handler(HTTPException)
