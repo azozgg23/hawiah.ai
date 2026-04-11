@@ -42,11 +42,11 @@ async def openai_generate(
 
     try:
         b64 = data["data"][0]["b64_json"]
-    except (KeyError, IndexError, TypeError):
+    except (KeyError, IndexError, TypeError) as e:
         raise ProviderError(
             "EMPTY_RESPONSE",
             "The provider returned no image. Please try again.",
-        )
+        ) from e
 
     return ProviderResult(
         image_bytes=base64.b64decode(b64),

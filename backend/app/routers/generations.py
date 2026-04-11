@@ -233,16 +233,16 @@ async def generate_image(
                     ),
                     timeout=120.0,
                 )
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as exc:
             raise ProviderError(
                 "TIMEOUT",
                 "The request took too long to complete. Please try again.",
-            )
+            ) from exc
         except ProviderError:
             raise
         except Exception as exc:
             code, user_msg = classify_provider_error(exc)
-            raise ProviderError(code, user_msg)
+            raise ProviderError(code, user_msg) from exc
 
         image_bytes = resize_to_preset(result.image_bytes, preset_w, preset_h)
 
@@ -303,6 +303,27 @@ async def generate_image(
                     "Failed to re-fetch generation %s after success update",
                     generation_id,
                 )
+        if row is None:
+            logger.error(
+                "No row data for succeeded generation %s brand_id=%s; constructing minimal row",
+                generation_id, brand_id,
+            )
+            row = {
+                "id": str(generation_id),
+                "prompt": body.prompt,
+                "provider": body.provider.value,
+                "model": resolved_model,
+                "platform_preset": body.platform_preset.value,
+                "width": preset_w,
+                "height": preset_h,
+                "logo_mode": body.logo_mode.value,
+                "status": "succeeded",
+                "image_path": image_path,
+                "error_code": None,
+                "error_message": None,
+                "created_at": now_iso,
+                "completed_at": now_iso,
+            }
         logger.info(
             "generate success generation_id=%s brand_id=%s",
             generation_id, brand_id,
