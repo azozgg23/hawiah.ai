@@ -1360,7 +1360,7 @@ Report: "Phase 1 complete — branch verified, 10 reference files read." Then ST
 
 ### T020 — Manual backend smoke test
 
-- [ ] T020 With the backend running (`cd backend && uvicorn app.main:app --reload --port 8000`), open `http://127.0.0.1:8000/docs` and confirm:
+- [x] T020 With the backend running (`cd backend && uvicorn app.main:app --reload --port 8000`), open `http://127.0.0.1:8000/docs` and confirm:
     1. A new tag `generations` appears
     2. Under it, exactly ONE endpoint: `POST /brands/{brand_id}/generate`
     3. **No** `GET /brands/{brand_id}/generations`, `GET /brands/{brand_id}/generations/{gen_id}`, or `DELETE /brands/{brand_id}/generations/{gen_id}` endpoints — these are Phase 7, not Phase 6. If any of those four unwanted endpoints appear, STOP and delete them from `backend/app/routers/generations.py`.
@@ -1382,7 +1382,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T021 — Add generation TypeScript types
 
-- [ ] T021 [US1] Modify `frontend/types/index.ts`. Read the file first. Append the following block at the end of the file (do not modify anything already there):
+- [x] T021 [US1] Modify `frontend/types/index.ts`. Read the file first. Append the following block at the end of the file (do not modify anything already there):
 
     ```typescript
     export type Provider = 'openai' | 'gemini'
@@ -1432,7 +1432,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T022 — [P] [US1] Create presets mirror (frontend)
 
-- [ ] T022 [P] [US1] Create NEW file `frontend/lib/presets.ts`. Client-side mirror of the backend's `PLATFORM_PRESETS`. Requirements:
+- [x] T022 [P] [US1] Create NEW file `frontend/lib/presets.ts`. Client-side mirror of the backend's `PLATFORM_PRESETS`. Requirements:
 
     ```typescript
     import type { PlatformPreset } from '@/types'
@@ -1471,7 +1471,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T023 — [P] [US1] Create useActiveKeys hook
 
-- [ ] T023 [P] [US1] Create NEW file `frontend/hooks/use-active-keys.ts`. **Read `frontend/hooks/use-brand.ts` first** (if it exists) for the pattern; otherwise mirror the shape shown below. The hook calls `GET /brands/{brandId}/keys` and filters to active keys per provider. Requirements:
+- [x] T023 [P] [US1] Create NEW file `frontend/hooks/use-active-keys.ts`. **Read `frontend/hooks/use-brand.ts` first** (if it exists) for the pattern; otherwise mirror the shape shown below. The hook calls `GET /brands/{brandId}/keys` and filters to active keys per provider. Requirements:
 
     ```typescript
     'use client'
@@ -1527,7 +1527,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T024 — [P] [US1] Create useGenerate hook
 
-- [ ] T024 [P] [US1] Create NEW file `frontend/hooks/use-generate.ts`. Wraps `POST /brands/{brandId}/generate`. Requirements:
+- [x] T024 [P] [US1] Create NEW file `frontend/hooks/use-generate.ts`. Wraps `POST /brands/{brandId}/generate`. Requirements:
 
     ```typescript
     'use client'
@@ -1580,7 +1580,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T025 — [P] [US1] Create no-key-notice component
 
-- [ ] T025 [P] [US1] Create NEW file `frontend/components/generation/no-key-notice.tsx`. Inline warning shown when the selected provider has no active key (FR-009). Requirements:
+- [x] T025 [P] [US1] Create NEW file `frontend/components/generation/no-key-notice.tsx`. Inline warning shown when the selected provider has no active key (FR-009). Requirements:
 
     ```tsx
     import Link from 'next/link'
@@ -1609,7 +1609,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T026 — [P] [US1] Create prompt-input component
 
-- [ ] T026 [P] [US1] Create NEW file `frontend/components/generation/prompt-input.tsx`. Requirements:
+- [x] T026 [P] [US1] Create NEW file `frontend/components/generation/prompt-input.tsx`. Requirements:
 
     ```tsx
     'use client'
@@ -1654,7 +1654,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T027 — [P] [US1] Create preset-selector component
 
-- [ ] T027 [P] [US1] Create NEW file `frontend/components/generation/preset-selector.tsx`. Requirements:
+- [x] T027 [P] [US1] Create NEW file `frontend/components/generation/preset-selector.tsx`. Requirements:
 
     ```tsx
     'use client'
@@ -1699,7 +1699,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T028 — [P] [US1] Create provider-selector component
 
-- [ ] T028 [P] [US1] Create NEW file `frontend/components/generation/provider-selector.tsx`. Requirements:
+- [x] T028 [P] [US1] Create NEW file `frontend/components/generation/provider-selector.tsx`. Requirements:
 
     ```tsx
     'use client'
@@ -1752,7 +1752,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T029 — [P] [US1] Create logo-mode-selector component
 
-- [ ] T029 [P] [US1] Create NEW file `frontend/components/generation/logo-mode-selector.tsx`. Requirements:
+- [x] T029 [P] [US1] Create NEW file `frontend/components/generation/logo-mode-selector.tsx`. Requirements:
 
     ```tsx
     'use client'
@@ -1817,7 +1817,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T030 — [P] [US1] Create error-message component
 
-- [ ] T030 [P] [US1] Create NEW file `frontend/components/generation/error-message.tsx`. Requirements:
+- [x] T030 [P] [US1] Create NEW file `frontend/components/generation/error-message.tsx`. Requirements:
 
     ```tsx
     import Link from 'next/link'
@@ -1851,7 +1851,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T031 — [US1] Create generator-result component (with Download button per FR-034)
 
-- [ ] T031 [US1] Create NEW file `frontend/components/generation/generator-result.tsx`. **This component handles the FR-034 filename download** — do NOT skip the `fetch → blob → <a download>` pattern. Requirements:
+- [x] T031 [US1] Create NEW file `frontend/components/generation/generator-result.tsx`. **This component handles the FR-034 filename download** — do NOT skip the `fetch → blob → <a download>` pattern. Requirements:
 
     ```tsx
     'use client'
@@ -1946,7 +1946,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T032 — [US1] Create generator-form (top-level client component)
 
-- [ ] T032 [US1] Create NEW file `frontend/components/generation/generator-form.tsx`. **This is the top-level client component.** It holds form state, applies FR-033 on mount, enforces FR-008 button disabling, and submits via `useGenerate`. Requirements:
+- [x] T032 [US1] Create NEW file `frontend/components/generation/generator-form.tsx`. **This is the top-level client component.** It holds form state, applies FR-033 on mount, enforces FR-008 button disabling, and submits via `useGenerate`. Requirements:
 
     ```tsx
     'use client'
@@ -2054,7 +2054,7 @@ Report: "Phase 2 complete — backend generation pipeline built and tested. X te
 
 ### T033 — [US1] Replace the brand index page with the generator
 
-- [ ] T033 [US1] Modify `frontend/app/(dashboard)/[brandId]/page.tsx`. **Read the file first.** It currently returns a placeholder `<h2>Generator</h2>` with a paragraph. Replace the entire file contents with a server component that fetches the brand and renders `<GeneratorForm />`. Requirements:
+- [x] T033 [US1] Modify `frontend/app/(dashboard)/[brandId]/page.tsx`. **Read the file first.** It currently returns a placeholder `<h2>Generator</h2>` with a paragraph. Replace the entire file contents with a server component that fetches the brand and renders `<GeneratorForm />`. Requirements:
 
     The page needs to know `brand.name` and whether `brand.logo_url` is non-null. **Copy the `ensureBrandAccess` pattern from the brand layout** — read `frontend/app/(dashboard)/[brandId]/layout.tsx` to understand how it constructs the server-side API URL. The simplest approach here is to re-use the same fetch logic by exporting `ensureBrandAccess` from the layout OR by duplicating it in the page.
 

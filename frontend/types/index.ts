@@ -99,3 +99,47 @@ export interface BrandKit {
 export interface UpsertKitRequest {
   answers: KitAnswers
 }
+
+export type Provider = 'openai' | 'gemini'
+export type LogoMode = 'none' | 'prompt' | 'watermark' | 'both'
+export type GenerationStatus = 'pending' | 'processing' | 'succeeded' | 'failed'
+
+export type PlatformPreset =
+  | 'instagram_post'
+  | 'instagram_story'
+  | 'instagram_reel_cover'
+  | 'facebook_post'
+  | 'facebook_cover'
+  | 'facebook_story'
+  | 'twitter_post'
+  | 'twitter_header'
+  | 'linkedin_post'
+  | 'linkedin_banner'
+  | 'tiktok_video_cover'
+  | 'youtube_thumbnail'
+  | 'youtube_banner'
+
+export interface GenerateRequest {
+  prompt: string
+  provider: Provider
+  platform_preset: PlatformPreset
+  logo_mode: LogoMode
+}
+
+export interface GenerationResponse {
+  id: string
+  prompt: string
+  provider: Provider
+  model: string
+  platform_preset: PlatformPreset
+  width: number
+  height: number
+  logo_mode: LogoMode
+  status: GenerationStatus
+  image_url: string | null
+  download_filename: string | null
+  error_code: string | null
+  error_message: string | null
+  created_at: string
+  completed_at: string | null
+}
