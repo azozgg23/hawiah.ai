@@ -39,7 +39,14 @@ async function loadBrand(brandId: string): Promise<Brand> {
   if (!response.ok) throw new Error('Failed to load brand')
 
   const payload: unknown = await response.json()
-  if (!payload || typeof payload !== 'object') throw new Error('Invalid brand payload')
+  if (
+    !payload ||
+    typeof payload !== 'object' ||
+    typeof (payload as Record<string, unknown>).name !== 'string' ||
+    !('logo_url' in (payload as Record<string, unknown>))
+  ) {
+    throw new Error('Invalid brand payload')
+  }
   return payload as Brand
 }
 

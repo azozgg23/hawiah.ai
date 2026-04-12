@@ -15,7 +15,9 @@ export function PresetSelector({ value, onChange, disabled }: PresetSelectorProp
       <label className="text-sm font-medium">Platform preset</label>
       <select
         value={value ?? ''}
-        onChange={(e) => onChange(e.target.value as PlatformPreset)}
+        onChange={(e) => {
+          if (e.target.value !== '') onChange(e.target.value as PlatformPreset)
+        }}
         disabled={disabled}
         className="w-full rounded-md border border-input bg-background p-2 text-sm disabled:opacity-50"
       >

@@ -27,6 +27,10 @@ export function GeneratorForm({ brandId, brandName, brandHasLogo }: GeneratorFor
   const { state, generate } = useGenerate(brandId)
 
   useEffect(() => {
+    setProviderInitialized(false)
+  }, [brandId])
+
+  useEffect(() => {
     if (keysLoading || providerInitialized) return
     if (activeKeys.openaiActive && !activeKeys.geminiActive) {
       setProvider('openai')

@@ -76,7 +76,7 @@ export function GeneratorResult({ state, brandId }: GeneratorResultProps) {
         <button
           type="button"
           onClick={() => handleDownload(result)}
-          disabled={downloading || !result.image_url}
+          disabled={downloading || !result.image_url || !result.download_filename}
           className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           {downloading ? 'Downloading…' : 'Download'}

@@ -28,7 +28,12 @@ export function useGenerate(brandId: string): UseGenerateResult {
       )
       setState({ status: 'success', result })
     } catch (err) {
-      const code = (err as { code?: string }).code ?? 'UNKNOWN'
+      let code = (err as { code?: string }).code
+      if (!code && err instanceof Error) {
+        const match = err.message.match(/\b([A-Z][A-Z0-9_]{1,})\b/)
+        if (match) code = match[1]
+      }
+      code = code ?? 'UNKNOWN'
       const message =
         err instanceof Error ? err.message : 'Something went wrong. Please try again.'
       setState({ status: 'error', code, message })

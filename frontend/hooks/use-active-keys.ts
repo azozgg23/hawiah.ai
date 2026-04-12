@@ -34,6 +34,7 @@ export function useActiveKeys(brandId: string): UseActiveKeysResult {
         geminiActive: keys.some(k => k.provider === 'gemini' && k.is_active),
       })
     } catch (err) {
+      setActiveKeys({ openaiActive: false, geminiActive: false })
       setError(err instanceof Error ? err.message : 'Failed to load keys')
     } finally {
       setLoading(false)
