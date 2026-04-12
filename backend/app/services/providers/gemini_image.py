@@ -28,7 +28,7 @@ def gemini_generate(
             response_modalities=["Image"],
             image_config=genai_types.ImageConfig(
                 aspect_ratio=aspect_ratio,
-                image_size="1K",
+                image_size="2K",
             ),
         ),
     )

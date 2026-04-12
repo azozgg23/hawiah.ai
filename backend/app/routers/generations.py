@@ -24,7 +24,7 @@ from app.services.presets import (
     PRESET_TO_ASPECT_RATIO,
     build_download_filename,
 )
-from app.services.prompt_composer import compose_full_prompt
+from app.services.prompt_composer import BrandContext, build_platform_context, compose_full_prompt
 from app.services.providers.base import ProviderError, ProviderResult
 from app.services.providers.gemini_image import gemini_generate
 from app.services.providers.openai_image import openai_generate
@@ -83,20 +83,29 @@ def _get_active_key_or_400(brand_id: UUID, provider: str) -> dict:
     return result.data
 
 
-def _get_brand_kit_summary(brand_id: UUID) -> str | None:
+def _get_brand_kit_context(brand_id: UUID, brand_name: str) -> BrandContext | None:
+    """Fetch raw brand kit fields for a complete kit, or None."""
     client = get_service_client()
     result = (
         client.table("brand_kits")
-        .select("summary, status")
+        .select("tagline, tone, audience, colors, avoid_words, status")
         .eq("brand_id", str(brand_id))
         .maybe_single()
         .execute()
     )
     if result is None or result.data is None:
         return None
-    if result.data.get("status") != "complete":
+    row = result.data
+    if row.get("status") != "complete":
         return None
-    return result.data.get("summary")
+    return BrandContext(
+        name=brand_name,
+        tagline=row.get("tagline"),
+        tone=row.get("tone"),
+        audience=row.get("audience"),
+        colors=row.get("colors") or [],
+        avoid_words=row.get("avoid_words"),
+    )
 
 
 def _mark_failed(generation_id: UUID, code: str, message: str) -> None:
@@ -168,7 +177,14 @@ async def generate_image(
 
     active_key = _get_active_key_or_400(brand_id, body.provider.value)
 
-    brand_context_summary = _get_brand_kit_summary(brand_id)
+    aspect_ratio = PRESET_TO_ASPECT_RATIO[body.platform_preset.value]
+    platform = build_platform_context(
+        preset_id=body.platform_preset.value,
+        width=preset_w,
+        height=preset_h,
+        aspect_ratio=aspect_ratio,
+    )
+    brand_context = _get_brand_kit_context(brand_id, brand_name)
 
     generation_id = uuid4()
     resolved_model = MODEL_FOR_PROVIDER[body.provider.value]
@@ -202,7 +218,8 @@ async def generate_image(
 
         full_prompt = compose_full_prompt(
             user_prompt=body.prompt,
-            brand_context_summary=brand_context_summary,
+            brand_context=brand_context,
+            platform=platform,
             logo_mode=body.logo_mode.value,
             brand_has_logo=brand_has_logo,
         )
@@ -222,7 +239,6 @@ async def generate_image(
                     timeout=120.0,
                 )
             else:
-                aspect_ratio = PRESET_TO_ASPECT_RATIO[body.platform_preset.value]
                 result = await asyncio.wait_for(
                     asyncio.to_thread(
                         gemini_generate,
