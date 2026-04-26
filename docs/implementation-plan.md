@@ -55,7 +55,7 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
 | Provider keys | Key rotation with single active key per provider | Allows safe rotation without downtime |
 | Generation lifecycle | `pending`/`processing`/`succeeded`/`failed` statuses | Preserves failure history and supports retries/ops visibility |
 | Admin | Operator-only (email allowlist) | Users manage their brands; operator monitors system |
-| AI Models | OpenAI `gpt-image-1.5` + Gemini `gemini-3-pro-image-preview` | Latest image generation models |
+| AI Models | OpenAI `gpt-image-2` + Gemini `gemini-3-pro-image-preview` | Latest image generation models |
 | Summary derivation | Template concatenation | Deterministic, fast, no extra API costs |
 | History actions | View + Delete only | MVP scope; no prompt reuse |
 
@@ -92,7 +92,7 @@ Basar AI is a multi-brand SaaS for generating social images. Users create brands
                                    ▼
                     ┌──────────────────────────┐
                     │    Provider APIs         │
-                    │  - OpenAI (gpt-image-1.5)│
+                    │  - OpenAI (gpt-image-2)  │
                     │  - Gemini API            │
                     │    (gemini-3-pro-image-  │
                     │     preview)             │
@@ -729,7 +729,7 @@ Authorization: Bearer <supabase_access_token>
 {
   "prompt": "A modern office space with natural lighting",
   "provider": "openai",
-  "model": "gpt-image-1.5",
+  "model": "gpt-image-2",
   "platform_preset": "instagram_post",
   "logo_mode": "watermark"
 }
@@ -741,7 +741,7 @@ Authorization: Bearer <supabase_access_token>
   "id": "uuid",
   "prompt": "A modern office space with natural lighting",
   "provider": "openai",
-  "model": "gpt-image-1.5",
+  "model": "gpt-image-2",
   "platform_preset": "instagram_post",
   "width": 1080,
   "height": 1080,
@@ -854,7 +854,7 @@ async def generate_image(
                 prompt=full_prompt,
                 width=target_width,
                 height=target_height,
-                model=request.model or 'gpt-image-1.5'
+                model=request.model or 'gpt-image-2'
             )
         else:
             # Gemini requires aspect_ratio and image_size, not width/height.
@@ -923,7 +923,7 @@ async def generate_image(
 
 ### Provider Integration
 
-#### OpenAI (gpt-image-1.5)
+#### OpenAI (gpt-image-2)
 
 ```python
 from dataclasses import dataclass
@@ -938,7 +938,7 @@ async def openai_generate(
     prompt: str,
     width: int,
     height: int,
-    model: str = 'gpt-image-1.5'
+    model: str = 'gpt-image-2'
 ) -> ProviderResult:
     """Generate image using OpenAI API."""
     async with httpx.AsyncClient() as client:
@@ -1691,7 +1691,7 @@ supabase/
 
 | Model | Description |
 |-------|-------------|
-| `gpt-image-1.5` | Latest image generation model (default) |
+| `gpt-image-2` | Latest image generation model (default) |
 | `gpt-image-1` | Previous generation (fallback) |
 
 ### Gemini Image Models

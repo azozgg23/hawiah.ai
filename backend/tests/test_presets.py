@@ -31,7 +31,7 @@ def test_aspect_ratios_are_from_supported_set():
 
 def test_model_for_provider():
     assert MODEL_FOR_PROVIDER == {
-        "openai": "gpt-image-1.5",
+        "openai": "gpt-image-2",
         "gemini": "gemini-3-pro-image-preview",
     }
 
