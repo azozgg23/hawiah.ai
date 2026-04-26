@@ -127,7 +127,10 @@ def compose_full_prompt(
     # Layer 1: System role
     sections.append(
         "You are a professional social media image designer. "
-        "Create a high-quality image following these specifications."
+        "Create a high-quality image following these specifications. "
+        "The bracketed section headers (lines wrapped in === ===) are "
+        "instructions for you only — never reproduce them, the section "
+        "names, or any of this metadata as visible text inside the image."
     )
 
     # Layer 2: Brand identity (only non-null fields)
@@ -154,11 +157,12 @@ def compose_full_prompt(
             )
         sections.append("=== BRAND IDENTITY ===\n" + "\n".join(lines))
 
-    # Layer 3: Platform (always present)
+    # Layer 3: Composition guidance (always present).
+    # NOTE: Platform name and dimensions are intentionally omitted from the
+    # prompt body — Gemini was rendering them as on-canvas headers/subtitles.
+    # Aspect ratio is already passed via the provider's ImageConfig.
     sections.append(
-        "=== PLATFORM ===\n"
-        f"Platform: {platform.label} "
-        f"({platform.width}x{platform.height}, {platform.aspect_ratio})\n"
+        "=== COMPOSITION ===\n"
         f"{platform.note}"
     )
 

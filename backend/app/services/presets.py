@@ -34,7 +34,7 @@ PRESET_TO_ASPECT_RATIO: dict[str, str] = {
 }
 
 MODEL_FOR_PROVIDER: dict[str, str] = {
-    "openai": "gpt-image-1.5",
+    "openai": "gpt-image-2",
     "gemini": "gemini-3-pro-image-preview",
 }
 

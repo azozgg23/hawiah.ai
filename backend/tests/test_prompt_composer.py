@@ -50,10 +50,10 @@ def test_section_ordering_full():
         brand_has_logo=True,
     )
     brand_idx = result.index("=== BRAND IDENTITY ===")
-    platform_idx = result.index("=== PLATFORM ===")
+    composition_idx = result.index("=== COMPOSITION ===")
     logo_idx = result.index("=== LOGO ===")
     request_idx = result.index("=== IMAGE REQUEST ===")
-    assert brand_idx < platform_idx < logo_idx < request_idx
+    assert brand_idx < composition_idx < logo_idx < request_idx
 
 
 def test_user_request_is_last():
@@ -154,9 +154,24 @@ def test_platform_always_present():
         logo_mode="none",
         brand_has_logo=False,
     )
-    assert "=== PLATFORM ===" in result
-    assert "Platform: Instagram Post (1080x1080, 1:1)" in result
+    assert "=== COMPOSITION ===" in result
     assert "grid tile" in result
+
+
+def test_platform_label_and_dimensions_not_leaked_to_prompt():
+    # Prevents Gemini from rendering platform metadata as on-canvas text.
+    # See: regression where "Facebook Post" + "1200x630 landscape" appeared
+    # as a header/subtitle on generated images.
+    result = compose_full_prompt(
+        user_prompt=USER_PROMPT,
+        brand_context=None,
+        platform=SAMPLE_PLATFORM,
+        logo_mode="none",
+        brand_has_logo=False,
+    )
+    assert "Instagram Post" not in result
+    assert "1080x1080" not in result
+    assert "Platform:" not in result
 
 
 def test_platform_notes_cover_all_presets():

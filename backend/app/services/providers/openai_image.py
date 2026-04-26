@@ -33,10 +33,16 @@ async def openai_generate(
                 "model": model,
                 "prompt": prompt,
                 "size": _openai_size(width, height),
-                "response_format": "b64_json",
                 "n": 1,
             },
         )
+        if response.status_code >= 400:
+            logger.error(
+                "openai_generate http error: status=%s request_id=%s body=%s",
+                response.status_code,
+                response.headers.get("x-request-id"),
+                response.text[:1000],
+            )
         response.raise_for_status()
         data = response.json()
 
