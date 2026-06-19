@@ -18,15 +18,26 @@ export async function POST(
   const auth = request.headers.get('authorization')
   if (auth) headers['Authorization'] = auth
 
-  const upstream = await fetch(
-    `${BACKEND_URL}/brands/${params.brandId}/generate`,
-    {
+  let upstream: Response
+  try {
+    upstream = await fetch(`${BACKEND_URL}/brands/${params.brandId}/generate`, {
       method: 'POST',
       headers,
       body,
       signal: AbortSignal.timeout(290_000),
-    },
-  )
+    })
+  } catch (err) {
+    const isTimeout = err instanceof Error && err.name === 'TimeoutError'
+    const status = isTimeout ? 504 : 502
+    const code = isTimeout ? 'GATEWAY_TIMEOUT' : 'BACKEND_UNREACHABLE'
+    const message = isTimeout
+      ? 'The request took too long to complete. Please try again.'
+      : 'Could not reach the generation service. Please try again.'
+    return NextResponse.json(
+      { error: { code, message, request_id: null } },
+      { status },
+    )
+  }
 
   const responseBody = await upstream.text()
   return new NextResponse(responseBody, {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { apiRequest } from '@/lib/api'
+import { apiRequest, ApiError } from '@/lib/api'
 import type { GenerateRequest, GenerationResponse } from '@/types'
 
 export type GenerateState =
@@ -28,12 +28,7 @@ export function useGenerate(brandId: string): UseGenerateResult {
       )
       setState({ status: 'success', result })
     } catch (err) {
-      let code = (err as { code?: string }).code
-      if (!code && err instanceof Error) {
-        const match = err.message.match(/\b([A-Z][A-Z0-9_]{1,})\b/)
-        if (match) code = match[1]
-      }
-      code = code ?? 'UNKNOWN'
+      const code = err instanceof ApiError ? err.code : 'UNKNOWN'
       const message =
         err instanceof Error ? err.message : 'Something went wrong. Please try again.'
       setState({ status: 'error', code, message })

@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -66,6 +67,52 @@ class GenerationResponse(BaseModel):
     height: int
     logo_mode: LogoModeEnum
     status: GenerationStatusEnum
+    image_url: str | None
+    download_filename: str | None
+    error_code: str | None
+    error_message: str | None
+    created_at: datetime
+    completed_at: datetime | None
+
+
+class GenerationHistoryStatusEnum(str, Enum):
+    succeeded = "succeeded"
+    failed = "failed"
+
+
+class GenerationHistoryItem(BaseModel):
+    id: str
+    prompt_excerpt: str
+    provider: ProviderEnum
+    model: str
+    platform_preset: PlatformPresetEnum
+    width: int
+    height: int
+    logo_mode: LogoModeEnum
+    status: GenerationHistoryStatusEnum
+    image_url: str | None
+    error_message: str | None
+    created_at: datetime
+    completed_at: datetime | None
+
+
+class GenerationHistoryPage(BaseModel):
+    items: list[GenerationHistoryItem]
+    next_cursor: str | None
+    page_size: Literal[24]
+
+
+class GenerationDetailResponse(BaseModel):
+    id: str
+    prompt: str
+    provider: ProviderEnum
+    model: str
+    platform_preset: PlatformPresetEnum
+    width: int
+    height: int
+    logo_mode: LogoModeEnum
+    status: GenerationHistoryStatusEnum
+    provider_request_id: str | None
     image_url: str | None
     download_filename: str | None
     error_code: str | None
