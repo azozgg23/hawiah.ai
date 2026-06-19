@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>basarai — Bug Hunt Report (008-generation-history)</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2430; --border:#30363d;
+    --text:#e6edf3; --muted:#9aa7b4; --faint:#6e7b8a;
+    --crit:#f85149; --high:#ff7b35; --med:#d29922; --low:#3fb950; --info:#58a6ff;
+    --code:#0b0f14; --accent:#58a6ff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 24px 96px}
+  header.top{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:32px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.4px}
+  .sub{color:var(--muted);font-size:15px}
+  .meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:24px}
+  .meta-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+  .meta-card .k{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint)}
+  .meta-card .v{font-size:14px;margin-top:3px;font-weight:600;word-break:break-word}
+  h2{font-size:21px;margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border);letter-spacing:-.2px}
+  h3{font-size:16px;margin:0}
+  p{margin:0 0 12px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* severity counts */
+  .counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin:8px 0 4px}
+  .count{background:var(--panel);border:1px solid var(--border);border-left-width:4px;border-radius:8px;padding:16px 18px}
+  .count .n{font-size:30px;font-weight:700;line-height:1}
+  .count .l{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-top:6px}
+  .count.crit{border-left-color:var(--crit)} .count.crit .n{color:var(--crit)}
+  .count.high{border-left-color:var(--high)} .count.high .n{color:var(--high)}
+  .count.med{border-left-color:var(--med)} .count.med .n{color:var(--med)}
+  .count.low{border-left-color:var(--low)} .count.low .n{color:var(--low)}
+
+  /* badges */
+  .badge{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 9px;border-radius:999px;vertical-align:middle}
+  .b-crit{background:rgba(248,81,73,.15);color:var(--crit);border:1px solid rgba(248,81,73,.4)}
+  .b-high{background:rgba(255,123,53,.15);color:var(--high);border:1px solid rgba(255,123,53,.4)}
+  .b-med{background:rgba(210,153,34,.15);color:var(--med);border:1px solid rgba(210,153,34,.4)}
+  .b-low{background:rgba(63,185,80,.15);color:var(--low);border:1px solid rgba(63,185,80,.4)}
+  .b-info{background:rgba(88,166,255,.13);color:var(--info);border:1px solid rgba(88,166,255,.4)}
+  .chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--border);color:var(--muted)}
+  .chip.ok{color:var(--low);border-color:rgba(63,185,80,.4)}
+  .chip.warn{color:var(--med);border-color:rgba(210,153,34,.4)}
+
+  /* summary table */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:4px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint);font-weight:600;background:var(--panel)}
+  tbody tr:hover{background:var(--panel)}
+  td code{font-size:12px}
+
+  /* finding cards */
+  .finding{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin:18px 0;overflow:hidden}
+  .finding > .head{display:flex;gap:12px;align-items:flex-start;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .finding > .head .id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--faint);min-width:36px;padding-top:2px}
+  .finding > .head .t{flex:1}
+  .finding > .head .t .title{font-size:16px;font-weight:650;margin-bottom:7px}
+  .finding > .head .t .tags{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+  .finding .body{padding:6px 20px 18px}
+  .finding .row{margin-top:14px}
+  .finding .row .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint);margin-bottom:5px}
+  .loc{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:var(--info)}
+  pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:13px 15px;overflow:auto;margin:0;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cdd9e5}
+  pre .c{color:#7d8590}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12.5px}
+  .fix{background:rgba(63,185,80,.06);border:1px solid rgba(63,185,80,.25);border-radius:8px;padding:12px 15px}
+  .fix .lbl{color:var(--low)}
+  .impact{background:rgba(248,81,73,.05);border-left:3px solid rgba(248,81,73,.4);border-radius:0 6px 6px 0;padding:10px 14px}
+
+  .note{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 18px;color:var(--muted);font-size:14px}
+  .lane-line{display:flex;gap:12px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--border)}
+  .lane-line:last-child{border-bottom:0}
+  .lane-line .ln{font-weight:650;min-width:54px;color:var(--text)}
+  .lane-line .ld{color:var(--muted);font-size:14px}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--border);color:var(--faint);font-size:13px}
+  .disclaimer{background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.3);border-radius:8px;padding:14px 18px;font-size:14px;color:#e3c78a;margin:18px 0}
+  ul.tight{margin:6px 0 0;padding-left:20px}
+  ul.tight li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>Bug Hunt Report — <span style="color:var(--accent)">basarai</span></h1>
+  <div class="sub">Static review of correctness, security, and data-integrity defects. <strong>No fixes were applied</strong> — this is a findings-only report.</div>
+  <div class="meta-grid">
+    <div class="meta-card"><div class="k">Branch</div><div class="v">008-generation-history</div></div>
+    <div class="meta-card"><div class="k">Date</div><div class="v">2026-06-08</div></div>
+    <div class="meta-card"><div class="k">Scope</div><div class="v">~2.6k LOC Python · ~7k LOC TS/TSX</div></div>
+    <div class="meta-card"><div class="k">Method</div><div class="v">5 parallel Sonnet finders + Opus verification</div></div>
+    <div class="meta-card"><div class="k">Findings</div><div class="v">9 confirmed + 1 to verify</div></div>
+  </div>
+</header>
+
+<section>
+  <h2>Executive summary</h2>
+  <p>Five non-overlapping review lanes covered the backend (FastAPI), the frontend (Next.js), and the cross-cutting contract / migrations / security surface. The active branch adds a <strong>generation-history</strong> feature (list / detail / delete / download of past AI image generations). Every high- and medium-severity finding below was <strong>re-read against the actual source by a stronger model</strong> before inclusion; each card states its verification status and the original finder's confidence.</p>
+
+  <div class="counts">
+    <div class="count crit"><div class="n">0</div><div class="l">Critical</div></div>
+    <div class="count high"><div class="n">3</div><div class="l">High</div></div>
+    <div class="count med"><div class="n">3</div><div class="l">Medium</div></div>
+    <div class="count low"><div class="n">3</div><div class="l">Low</div></div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Headline:</strong> No IDOR / auth-bypass holes were found — every new endpoint correctly performs an explicit <code>_get_brand_or_404(brand_id, user.id)</code> ownership check plus a <code>brand_id</code>-scoped query, which is exactly right given the backend uses the service-role client (RLS is bypassed). The real damage on this branch is an <strong>error-handling regression</strong> in the generation pipeline (<a href="#F1">F1</a>) that compounds with a frontend error-code bug (<a href="#F3">F3</a>) to fully break the "invalid API key" diagnostic path, plus a <strong>response-model 500</strong> on the new detail endpoint (<a href="#F2">F2</a>).
+  </div>
+</section>
+
+<section>
+  <h2>All findings at a glance</h2>
+  <table>
+    <thead><tr><th>#</th><th>Severity</th><th>Title</th><th>Area</th><th>Location</th><th>Confidence</th><th>Verified</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><a href="#F1">F1</a></td><td><span class="badge b-high">High</span></td>
+        <td>Dead <code>except StorageException</code> sends provider errors to 500 instead of classified 502</td>
+        <td>Backend</td><td><code>generations.py:369</code></td><td>High</td><td><span class="chip ok">✓ source</span></td>
+      </tr>
+      <tr>
+        <td><a href="#F2">F2</a></td><td><span class="badge b-high">High</span></td>
+        <td>Detail endpoint returns 500 for <code>pending</code>/<code>processing</code> generations (enum mismatch)</td>
+        <td>Backend</td><td><code>generation.py:114</code></td><td>High</td><td><span class="chip ok">✓ source</span></td>
+      </tr>
+      <tr>
+        <td><a href="#F3">F3</a></td><td><span class="badge b-high">High</span></td>
+        <td>Backend error <code>code</code> discarded in <code>api.ts</code> — INVALID_KEY remediation link never renders</td>
+        <td>Frontend</td><td><code>api.ts:14-77</code></td><td>High</td><td><span class="chip ok">✓ source</span></td>
+      </tr>
+      <tr>
+        <td><a href="#F4">F4</a></td><td><span class="badge b-med">Medium</span></td>
+        <td>DELETE removes storage before DB row — partial failure leaves a dangling row + dead image URL</td>
+        <td>Backend</td><td><code>generations.py:592-610</code></td><td>Medium</td><td><span class="chip ok">✓ source</span></td>
+      </tr>
+      <tr>
+        <td><a href="#F5">F5</a></td><td><span class="badge b-med">Medium</span></td>
+        <td>Post-delete refetch discards all loaded pages when the cursor boundary shifts</td>
+        <td>Frontend</td><td><code>use-generation-history.ts:109-114</code></td><td>High</td><td><span class="chip ok">✓ source</span></td>
+      </tr>
+      <tr>
+        <td><a href="#F6">F6</a></td><td><span class="badge b-med">Medium</span></td>
+        <td>Generate proxy route has no try/catch — timeout/network errors surface as opaque 500 HTML</td>
+        <td>Frontend</td><td><code>generate/route.ts:21-29</code></td><td>High</td><td><span class="chip ok">✓ source</span></td>
+      </tr>
+      <tr>
+        <td><a href="#F7">F7</a></td><td><span class="badge b-low">Low</span></td>
+        <td>Download failures silently swallowed (try/finally, no catch) — no user feedback</td>
+        <td>Frontend</td><td><code>history-download-button.tsx</code> · <code>generator-result.tsx</code></td><td>High</td><td><span class="chip ok">✓ source</span></td>
+      </tr>
+      <tr>
+        <td><a href="#F8">F8</a></td><td><span class="badge b-low">Low</span></td>
+        <td><code>URL.revokeObjectURL</code> called synchronously after <code>click()</code> — flaky download on Firefox/Safari</td>
+        <td>Frontend</td><td><code>download.ts:10-12</code></td><td>Medium</td><td><span class="chip ok">✓ source</span></td>
+      </tr>
+      <tr>
+        <td><a href="#F9">F9</a></td><td><span class="badge b-low">Low</span></td>
+        <td>Generation PNGs sit in a public bucket — readable by anyone with the URL (pre-existing design)</td>
+        <td>Infra</td><td><code>00009_create_storage_bucket.sql</code></td><td>High</td><td><span class="chip ok">✓ source</span></td>
+      </tr>
+      <tr>
+        <td><a href="#F10">F10</a></td><td><span class="badge b-info">Verify</span></td>
+        <td>Keyset cursor encodes <code>+00:00</code> offset — confirm PostgREST URL-encoding doesn't corrupt the filter</td>
+        <td>Backend</td><td><code>generations.py:530-536</code></td><td>Low</td><td><span class="chip warn">needs runtime test</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================ HIGH ============================ -->
+<section>
+  <h2>High severity</h2>
+
+  <div class="finding" id="F1">
+    <div class="head">
+      <div class="id">F1</div>
+      <div class="t">
+        <div class="title">Dead <code>except StorageException</code> sends provider errors to 500 instead of a classified 502</div>
+        <div class="tags">
+          <span class="badge b-high">High</span><span class="chip">correctness · regression</span>
+          <span class="chip">confidence: high</span><span class="chip ok">verified ✓</span>
+          <span class="loc">backend/app/routers/generations.py:339-371, 459-478</span>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row">
+        <p>This branch changed the inner exception handler around the provider call from <code>except Exception</code> to <code>except StorageException</code>. The inner <code>try</code> wraps <em>only</em> the <code>openai_generate</code> / <code>gemini_generate</code> call — those raise <code>httpx.HTTPStatusError</code> (OpenAI) and <code>google.genai</code> SDK errors (Gemini), never <code>storage3</code>'s <code>StorageException</code>. The handler is therefore <strong>dead code</strong>, so <code>classify_provider_error()</code> is never reached for provider failures.</p>
+      </div>
+      <div class="row">
+        <div class="lbl">Evidence — the inner try wraps the provider call only</div>
+<pre>try:
+    if body.provider is ProviderEnum.openai:
+        result = await asyncio.wait_for(openai_generate(...), timeout=120.0)
+    else:
+        result = await asyncio.wait_for(asyncio.to_thread(gemini_generate, ...), timeout=120.0)
+except asyncio.TimeoutError as exc:
+    raise ProviderError("TIMEOUT", ...) from exc
+except ProviderError:
+    raise
+except StorageException as exc:           <span class="c"># &lt;-- never raised here; classify_provider_error is dead</span>
+    code, user_msg = classify_provider_error(exc)
+    raise ProviderError(code, user_msg) from exc</pre>
+      </div>
+      <div class="row">
+        <p>A raw provider error (401 invalid key, 429 rate-limited, 400 content policy, network drop) now slips past this block and is caught by the outer <code>except Exception</code>, which marks the row failed with a hard-coded <code>INTERNAL_ERROR</code> and returns HTTP 500:</p>
+<pre>except Exception:
+    logger.exception(...)
+    _mark_failed(generation_id, "INTERNAL_ERROR", "Internal error")
+    raise _error_response(500, "INTERNAL_ERROR", "Something went wrong. Please try again.")</pre>
+      </div>
+      <div class="row">
+        <div class="lbl">Cross-file confirmation (provider sources read during verification)</div>
+        <p><code>openai_image.py:46</code> calls <code>response.raise_for_status()</code>, which raises a <strong>raw <code>httpx.HTTPStatusError</code></strong> — never pre-wrapped — and <code>classify_provider_error()</code> (<code>error_mapping.py:22-45</code>) maps those httpx errors to <code>INVALID_KEY</code> (401/403), <code>RATE_LIMITED</code> (429), <code>CONTENT_POLICY</code> (400/422 policy), and <code>PROVIDER_CLIENT/SERVER_ERROR</code>. Every one of those now regresses to 500. The <strong>only</strong> survivors are the two genuine <code>ProviderError</code> paths: <code>EMPTY_RESPONSE</code> (raised by both providers, caught by <code>except ProviderError: raise</code>) and the <code>asyncio.wait_for</code> <code>TIMEOUT</code> (caught by <code>except asyncio.TimeoutError</code>). Gemini SDK errors aren't <code>httpx</code> either, so they hit the same dead branch and regress from the old coarse <code>PROVIDER_SERVER_ERROR</code> (502) to <code>INTERNAL_ERROR</code> (500).</p>
+      </div>
+      <div class="row impact">
+        <div class="lbl">Impact</div>
+        Every provider-originated failure now returns <code>500 INTERNAL_ERROR</code> with a generic message instead of <code>502</code> + the actionable code (<code>INVALID_KEY</code>, <code>RATE_LIMITED</code>, <code>CONTENT_POLICY</code>, <code>NETWORK</code>). The DB row is still marked failed, but with the wrong <code>error_code</code>. Users can no longer tell a bad API key from a transient outage — and the "Review your provider keys" link (see <a href="#F3">F3</a>) loses its trigger. <strong>These two bugs compound:</strong> together they completely break the invalid-key recovery flow.
+      </div>
+      <div class="row fix">
+        <div class="lbl">Suggested direction</div>
+        Restore <code>except Exception as exc</code> for the provider-call block. The genuine <code>StorageException</code> surface is the watermark <code>download()</code> and the <code>upload()</code> calls lower in the function (lines 379-389), which are currently unwrapped — wrap those if storage errors should be classified.
+      </div>
+    </div>
+  </div>
+
+  <div class="finding" id="F2">
+    <div class="head">
+      <div class="id">F2</div>
+      <div class="t">
+        <div class="title">Detail endpoint returns 500 for <code>pending</code> / <code>processing</code> generations (response-model enum mismatch)</div>
+        <div class="tags">
+          <span class="badge b-high">High</span><span class="chip">contract-mismatch</span>
+          <span class="chip">confidence: high</span><span class="chip ok">verified ✓</span>
+          <span class="loc">models/generation.py:78-80, 105-121 · routers/generations.py:518-563</span>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row">
+        <p>Found independently by two lanes (backend + contract). <code>GenerationDetailResponse.status</code> is typed as <code>GenerationHistoryStatusEnum</code>, which accepts only <code>succeeded</code> / <code>failed</code>. But the DB column (<code>generation_status_t</code>, migration 00006) has four values — <code>pending</code>, <code>processing</code>, <code>succeeded</code>, <code>failed</code> — and the detail lookup applies <strong>no status filter</strong>:</p>
+<pre>def _find_generation_or_404(client, brand_id, generation_id):
+    result = (client.table("generations").select("*")
+        .eq("id", str(generation_id))
+        .eq("brand_id", str(brand_id))
+        .maybe_single().execute())          <span class="c"># no .in_("status", ["succeeded","failed"])</span>
+    ...
+<span class="c"># models/generation.py</span>
+class GenerationHistoryStatusEnum(str, Enum):
+    succeeded = "succeeded"
+    failed = "failed"
+class GenerationDetailResponse(BaseModel):
+    status: GenerationHistoryStatusEnum     <span class="c"># &lt;-- rejects pending/processing</span></pre>
+      </div>
+      <div class="row impact">
+        <div class="lbl">Impact</div>
+        Fetching the detail of a generation in <code>pending</code>/<code>processing</code> state raises a Pydantic <code>ValidationError</code> at response-serialization time → unhandled <strong>HTTP 500</strong>. Reachable during the live ~120 s generation window, and <em>permanently</em> for any row stuck in <code>processing</code> after a crash/restart mid-generation (the generate handler is blocking, so an interrupted run never transitions to <code>failed</code>).
+        <br><br><strong>Reachability caveat:</strong> the history <em>list</em> query filters to <code>succeeded</code>/<code>failed</code>, so a user cannot reach this by normal list&nbsp;→&nbsp;click navigation. It triggers only via a direct/bookmarked/shared detail URL or a crash-stuck row — i.e. <em>off the happy path</em>. Rated High because it is an unhandled 500 on a valid, owned resource that becomes permanent for stuck rows; if you weight reachability heavily, Medium is also defensible.
+      </div>
+      <div class="row fix">
+        <div class="lbl">Suggested direction</div>
+        Either add <code>.in_("status", ["succeeded","failed"])</code> to the detail lookup (404 for non-terminal rows), <em>or</em> widen <code>GenerationDetailResponse.status</code> to the full <code>GenerationStatusEnum</code> and have the frontend render an in-progress state. (Delete reaches the same helper but never serializes <code>status</code>, so it is unaffected.)
+      </div>
+    </div>
+  </div>
+
+  <div class="finding" id="F3">
+    <div class="head">
+      <div class="id">F3</div>
+      <div class="t">
+        <div class="title">Backend error <code>code</code> is discarded in <code>api.ts</code> — the INVALID_KEY remediation link can never render</div>
+        <div class="tags">
+          <span class="badge b-high">High</span><span class="chip">correctness</span>
+          <span class="chip">confidence: high</span><span class="chip ok">verified ✓</span>
+          <span class="loc">lib/api.ts:4-77 · hooks/use-generate.ts:31-36 · generation/error-message.tsx:15</span>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row">
+        <p>The backend error envelope is <code>{ error: { code, message, request_id } }</code>. <code>getErrorMessage()</code> extracts only <code>message</code>, and <code>apiRequest</code> throws a plain <code>new Error(message)</code> — the <code>code</code> is dropped on the floor. Downstream, <code>use-generate</code> reads <code>(err as {code?}).code</code> (always <code>undefined</code> on a plain Error) and falls back to scraping the message for an ALL-CAPS token:</p>
+<pre><span class="c">// use-generate.ts</span>
+let code = (err as { code?: string }).code              <span class="c">// undefined</span>
+if (!code &amp;&amp; err instanceof Error) {
+  const match = err.message.match(/\b([A-Z][A-Z0-9_]{1,})\b/)
+  if (match) code = match[1]
+}
+code = code ?? 'UNKNOWN'</pre>
+        <p>The INVALID_KEY user message — <em>"Your provider key was rejected. Please check your keys."</em> — contains no run of ≥2 capitals, so the regex never matches and <code>code</code> resolves to <code>'UNKNOWN'</code>. <code>error-message.tsx</code> only renders the recovery link when <code>code === 'INVALID_KEY'</code>:</p>
+<pre>{code === 'INVALID_KEY' &amp;&amp; (
+  &lt;Link href={`/${brandId}/keys`}&gt;Review your provider keys&lt;/Link&gt;
+)}</pre>
+      </div>
+      <div class="row impact">
+        <div class="lbl">Impact</div>
+        The "Review your provider keys" remediation link is dead for every invalid-key failure. Combined with <a href="#F1">F1</a> (which already downgrades INVALID_KEY to INTERNAL_ERROR server-side), the entire invalid-key recovery UX is broken end-to-end. The brittle regex also mis-classifies any message that happens to contain an unrelated acronym.
+      </div>
+      <div class="row fix">
+        <div class="lbl">Suggested direction</div>
+        Throw a typed <code>ApiError extends Error</code> carrying <code>code</code> from <code>errorPayload.error.code</code>; read <code>err.code</code> directly in <code>use-generate</code> and delete the regex fallback.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ MEDIUM ============================ -->
+<section>
+  <h2>Medium severity</h2>
+
+  <div class="finding" id="F4">
+    <div class="head">
+      <div class="id">F4</div>
+      <div class="t">
+        <div class="title">DELETE removes storage <em>before</em> the DB row — a partial failure leaves a dangling row with a dead image URL</div>
+        <div class="tags">
+          <span class="badge b-med">Medium</span><span class="chip">data-integrity</span>
+          <span class="chip">confidence: medium</span><span class="chip ok">verified ✓</span>
+          <span class="loc">backend/app/routers/generations.py:592-610</span>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row">
+        <p>The delete handler removes the storage object first, then deletes the DB row with no error handling on the second call:</p>
+<pre>image_path = row.get("image_path")
+if image_path:
+    try:
+        client.storage.from_(settings.STORAGE_BUCKET).remove([image_path])   <span class="c"># 1) storage gone</span>
+    except StorageException as exc:
+        if _is_already_missing_storage_error(exc): pass
+        else: raise _error_response(502, "STORAGE_DELETE_FAILED", ...)
+
+client.table("generations").delete().eq("id", str(generation_id)) \
+    .eq("brand_id", str(brand_id)).execute()                                  <span class="c"># 2) if THIS throws, row survives</span></pre>
+      </div>
+      <div class="row impact">
+        <div class="lbl">Impact</div>
+        If the DB delete throws after storage removal succeeds, the row survives with an <code>image_path</code> pointing at a deleted object. History then shows a broken image, and the detail page hands back a valid-looking <code>image_url</code> that 404s. Recoverable on retry (storage-missing is tolerated), but the interim state is corrupt.
+      </div>
+      <div class="row fix">
+        <div class="lbl">Suggested direction</div>
+        Delete the DB row first, then best-effort delete storage (log &amp; swallow). Worst case becomes an orphaned PNG with no DB reference — a harmless storage leak — instead of a visible broken record.
+      </div>
+    </div>
+  </div>
+
+  <div class="finding" id="F5">
+    <div class="head">
+      <div class="id">F5</div>
+      <div class="t">
+        <div class="title">Post-delete refetch discards all previously loaded pages when the cursor boundary shifts</div>
+        <div class="tags">
+          <span class="badge b-med">Medium</span><span class="chip">correctness · UX</span>
+          <span class="chip">confidence: high</span><span class="chip ok">verified ✓</span>
+          <span class="loc">frontend/hooks/use-generation-history.ts:78-135</span>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row">
+        <p>After a successful delete the page calls <code>refetch()</code>, which runs <code>loadPages(activeCursor)</code>. To "restore" scroll depth, it walks pages forward looking for a live <code>next_cursor</code> equal to the stored <code>activeCursor</code>. Because cursors are keyset cursors over <code>(created_at, id)</code>, deleting any item at or before that boundary shifts every subsequent boundary, so the stored cursor will never re-appear. The walk falls through to the replace branch:</p>
+<pre>if (!cursorFound &amp;&amp; next !== cursorToRestore) {
+  const targetPage = await requestPage(cursorToRestore)
+  loadedItems = targetPage.items     <span class="c">// &lt;-- REPLACES; pages 1..N-1 thrown away</span>
+  next = targetPage.next_cursor
+}</pre>
+        <p>The same branch fires unconditionally once the user has loaded more than 10 pages (the <code>guard &lt; 10</code> cap stops the forward walk early).</p>
+      </div>
+      <div class="row impact">
+        <div class="lbl">Impact</div>
+        Deleting an item after using "Load more" collapses the visible list to a single 24-item page; items the user was looking at vanish. Recoverable only by a manual full refresh.
+      </div>
+      <div class="row fix">
+        <div class="lbl">Suggested direction</div>
+        On delete, <code>refetch()</code> from a clean page-1 (<code>activeCursor = null</code>) and drop the cursor-reconstruction path, or optimistically splice the deleted id out of <code>items</code> instead of re-walking.
+      </div>
+    </div>
+  </div>
+
+  <div class="finding" id="F6">
+    <div class="head">
+      <div class="id">F6</div>
+      <div class="t">
+        <div class="title">Generate proxy route has no try/catch — timeout/network errors surface as an opaque 500 HTML page</div>
+        <div class="tags">
+          <span class="badge b-med">Medium</span><span class="chip">error-handling</span>
+          <span class="chip">confidence: high</span><span class="chip ok">verified ✓</span>
+          <span class="loc">frontend/app/api/brands/[brandId]/generate/route.ts:21-29</span>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row">
+        <p>The proxy's <code>fetch</code> to the backend uses <code>AbortSignal.timeout(290_000)</code> but is wrapped in no try/catch. If the backend is unreachable or the 290 s timeout fires, the route handler throws and Next.js returns a 500 with an <em>HTML</em> body:</p>
+<pre>const upstream = await fetch(`${BACKEND_URL}/brands/${params.brandId}/generate`, {
+  method: 'POST', headers, body,
+  signal: AbortSignal.timeout(290_000),     <span class="c">// throws AbortError -- uncaught</span>
+})
+const responseBody = await upstream.text()</pre>
+        <p>Client-side, <code>api.ts</code> only parses JSON when <code>content-type</code> says so; on an HTML 500 it falls back to <code>response.statusText</code> → the user sees a bare "Internal Server Error".</p>
+      </div>
+      <div class="row impact">
+        <div class="lbl">Impact</div>
+        A slow or down backend yields an opaque error with no timeout/connectivity signal — indistinguishable from a real server bug, and it bypasses the structured error UI entirely.
+      </div>
+      <div class="row fix">
+        <div class="lbl">Suggested direction</div>
+        Wrap the <code>fetch</code>/<code>text()</code> in try/catch; return <code>504</code> on <code>AbortError</code> and <code>502</code> on other network errors, both with a JSON <code>{ error: { code, message } }</code> body the client can parse.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ LOW ============================ -->
+<section>
+  <h2>Low severity</h2>
+
+  <div class="finding" id="F7">
+    <div class="head">
+      <div class="id">F7</div>
+      <div class="t">
+        <div class="title">Download failures silently swallowed — try/finally with no catch</div>
+        <div class="tags">
+          <span class="badge b-low">Low</span><span class="chip">error-handling</span>
+          <span class="chip">confidence: high</span><span class="chip ok">verified ✓</span>
+          <span class="loc">components/history/history-download-button.tsx · components/generation/generator-result.tsx</span>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row">
+        <p>Both download buttons call <code>downloadImageFile()</code> inside <code>try { … } finally { setDownloading(false) }</code> with no <code>catch</code>. <code>downloadImageFile</code> throws on any non-2xx fetch (expired/missing object, CORS): the rejection goes unhandled, the button flips back to "Download", and the user gets <strong>no error feedback</strong> — they can't tell success from failure.</p>
+      </div>
+      <div class="row fix">
+        <div class="lbl">Suggested direction</div>
+        Add a <code>catch</code> that surfaces the thrown message (already descriptive — <code>"Failed to fetch image"</code>) via local state or a toast.
+      </div>
+    </div>
+  </div>
+
+  <div class="finding" id="F8">
+    <div class="head">
+      <div class="id">F8</div>
+      <div class="t">
+        <div class="title"><code>URL.revokeObjectURL</code> called synchronously after <code>click()</code> — flaky download on Firefox/Safari</div>
+        <div class="tags">
+          <span class="badge b-low">Low</span><span class="chip">correctness · cross-browser</span>
+          <span class="chip">confidence: medium</span><span class="chip ok">verified ✓</span>
+          <span class="loc">frontend/lib/download.ts:10-12</span>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row">
+<pre>a.click()
+a.remove()
+URL.revokeObjectURL(url)   <span class="c">// revoked before the browser has read the blob</span></pre>
+        <p>This shared helper (new on this branch, now used by both the generator result and history download) revokes the object URL in the same tick as the programmatic click. Chrome tolerates it; Firefox/Safari may cancel the download, yielding a 0-byte or failed file.</p>
+      </div>
+      <div class="row fix">
+        <div class="lbl">Suggested direction</div>
+        Defer revocation: <code>setTimeout(() =&gt; URL.revokeObjectURL(url), 10_000)</code> after the click.
+      </div>
+    </div>
+  </div>
+
+  <div class="finding" id="F9">
+    <div class="head">
+      <div class="id">F9</div>
+      <div class="t">
+        <div class="title">Generation PNGs live in a public bucket — readable by anyone with the URL <span style="color:var(--faint);font-weight:400">(pre-existing design)</span></div>
+        <div class="tags">
+          <span class="badge b-low">Low</span><span class="chip">security · privacy</span>
+          <span class="chip">confidence: high</span><span class="chip ok">verified ✓</span>
+          <span class="loc">supabase/migrations/00009_create_storage_bucket.sql</span>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row">
+        <p>The <code>brand-assets</code> bucket is <code>public = true</code> with a <code>Public Read</code> policy for the <code>public</code> role, and the API contract intentionally serves <code>/object/public/…</code> URLs. Generation images at <code>brands/{brandId}/generations/{id}.png</code> are therefore fetchable by anyone holding the URL, with no auth check, until the generation is deleted.</p>
+      </div>
+      <div class="row note">
+        This is a <strong>deliberate decision from feature 006</strong>, not a regression introduced here — included for completeness. If brand assets ever need confidentiality, switch to signed URLs (<code>storage.createSignedUrl</code>) and a private bucket. The history feature's delete is currently the only privacy lever.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ TO VERIFY ============================ -->
+<section>
+  <h2>To verify <span style="font-size:13px;color:var(--faint);font-weight:400">— surfaced during verification, not yet confirmed against a running system</span></h2>
+
+  <div class="finding" id="F10">
+    <div class="head">
+      <div class="id">F10</div>
+      <div class="t">
+        <div class="title">Keyset cursor encodes a <code>+00:00</code> offset into the PostgREST <code>or</code> filter — confirm URL-encoding is intact</div>
+        <div class="tags">
+          <span class="badge b-info">Verify</span><span class="chip">correctness</span>
+          <span class="chip">confidence: low</span><span class="chip warn">needs runtime test</span>
+          <span class="loc">backend/app/routers/generations.py:_decode_cursor / list query</span>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row">
+        <p>The pagination cursor decodes <code>created_at</code> back to an ISO string with a <code>+00:00</code> offset and interpolates it into a PostgREST filter:</p>
+<pre>query.or_(f"created_at.lt.{cursor_created_at},"
+          f"and(created_at.eq.{cursor_created_at},id.lt.{cursor_id})")
+<span class="c"># cursor_created_at looks like 2026-06-07T12:00:00+00:00</span></pre>
+        <p>A literal <code>+</code> in a URL query string decodes to a space. supabase-py / postgrest-py route this value through httpx, which <em>should</em> percent-encode it to <code>%2B</code> — in which case it's fine. But if any layer passes it through unencoded, PostgREST would read the timestamp as a space-separated value and the boundary comparison would silently shift or fail, causing skipped or duplicated rows at page edges. The keyset logic itself (desc order, <code>id</code> tiebreaker, fetch <code>N+1</code> for <code>has_next</code>) is otherwise correct.</p>
+      </div>
+      <div class="row fix">
+        <div class="lbl">How to confirm</div>
+        Paginate a brand with &gt;24 generations whose <code>created_at</code> values straddle a page boundary and assert no item is skipped or repeated across pages; or capture the outbound PostgREST request and verify the <code>+</code> is encoded as <code>%2B</code>.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ COVERAGE ============================ -->
+<section>
+  <h2>Lane coverage</h2>
+  <div class="note" style="padding:6px 18px">
+    <div class="lane-line"><span class="ln">Lane 1</span><span class="ld"><strong>Backend — generations router + model.</strong> The feature's hot path. → F1, F2, F4.</span></div>
+    <div class="lane-line"><span class="ln">Lane 2</span><span class="ld"><strong>Backend — services, providers, core, other routers.</strong> Pre-existing code (features 001–007), unchanged on this branch. Reviewed clean: JWKS/JWT verification correct, all mutating endpoints enforce explicit ownership, provider timeouts ≥30 s, image mode/format handling sound. <span class="chip ok">0 findings</span></span></div>
+    <div class="lane-line"><span class="ln">Lane 3</span><span class="ld"><strong>Frontend — history feature (new).</strong> → F5, F7.</span></div>
+    <div class="lane-line"><span class="ln">Lane 4</span><span class="ld"><strong>Frontend — generation flow + core libs + auth/session.</strong> → F3, F6, F8.</span></div>
+    <div class="lane-line"><span class="ln">Lane 5</span><span class="ld"><strong>Contract + migrations + RLS/security.</strong> Confirmed: no IDOR (explicit ownership everywhere), field names / nullability / datetime align across the contract. → F2 (corroborated), F9.</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>Method &amp; caveats</h2>
+  <ul class="tight">
+    <li><strong>Process:</strong> 5 Sonnet finder agents ran in parallel over non-overlapping file lanes (real defects only, no style/lint nits), each returning structured findings with quoted evidence and a self-reported confidence. An Opus pass then re-read every High/Medium finding against the live source before inclusion.</li>
+    <li><strong>De-duplication:</strong> the detail-endpoint 500 was reported by two lanes and is merged here as F2. One self-generated hypothesis — that <code>GenerationHistoryItem</code> could 500 on NULL <code>width/height/model</code> for failed rows — was <em>disproved</em>: those columns are populated at insert time (<code>generations.py:303-316</code>), so it was dropped rather than reported.</li>
+    <li><strong>Confidence:</strong> Medium/Low confidence findings (F4, F8) and the single "Verify" item (F10) are explicitly flagged — treat them as leads, not certainties, until reproduced.</li>
+    <li><strong>Out of scope:</strong> no code was executed, no tests were run, and nothing was fixed. Dynamic behavior, performance under load, and the actual PostgREST wire format (F10) were not validated.</li>
+  </ul>
+</section>
+
+<footer>
+  Generated 2026-06-08 · basarai @ branch <code>008-generation-history</code> · findings-only, no changes applied · 5-lane parallel review with single-model verification.
+</footer>
+
+</div>
+</body>
+</html>

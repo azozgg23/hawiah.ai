@@ -143,3 +143,31 @@ export interface GenerationResponse {
   created_at: string
   completed_at: string | null
 }
+
+export type GenerationHistoryStatus = 'succeeded' | 'failed'
+
+export interface GenerationHistoryItem {
+  id: string
+  prompt_excerpt: string
+  provider: Provider
+  model: string
+  platform_preset: PlatformPreset
+  width: number
+  height: number
+  logo_mode: LogoMode
+  status: GenerationHistoryStatus
+  image_url: string | null
+  error_message: string | null
+  created_at: string
+  completed_at: string | null
+}
+
+export interface GenerationHistoryPage {
+  items: GenerationHistoryItem[]
+  next_cursor: string | null
+  page_size: 24
+}
+
+export interface GenerationDetail extends GenerationResponse {
+  provider_request_id: string | null
+}

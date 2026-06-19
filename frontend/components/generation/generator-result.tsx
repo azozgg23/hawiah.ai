@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { GenerationResponse } from '@/types'
 import { ErrorMessage } from '@/components/generation/error-message'
+import { downloadImageFile } from '@/lib/download'
 
 interface GeneratorResultProps {
   state:
@@ -15,22 +16,18 @@ interface GeneratorResultProps {
 
 export function GeneratorResult({ state, brandId }: GeneratorResultProps) {
   const [downloading, setDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   async function handleDownload(result: GenerationResponse) {
     if (!result.image_url || !result.download_filename) return
     setDownloading(true)
+    setDownloadError(null)
     try {
-      const response = await fetch(result.image_url)
-      if (!response.ok) throw new Error('Failed to fetch image')
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = result.download_filename
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
+      await downloadImageFile(result.image_url, result.download_filename)
+    } catch (err) {
+      setDownloadError(
+        err instanceof Error ? err.message : 'Download failed. Please try again.',
+      )
     } finally {
       setDownloading(false)
     }
@@ -82,6 +79,9 @@ export function GeneratorResult({ state, brandId }: GeneratorResultProps) {
           {downloading ? 'Downloading…' : 'Download'}
         </button>
       </div>
+      {downloadError && (
+        <p className="text-xs text-destructive">{downloadError}</p>
+      )}
     </div>
   )
 }

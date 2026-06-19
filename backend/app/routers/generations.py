@@ -1,9 +1,13 @@
 import asyncio
+import base64
+from binascii import Error as BinasciiError
+import json
 import logging
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from storage3.exceptions import StorageException
 
 from app.config import settings
 from app.core.auth import User, get_current_user
@@ -11,9 +15,14 @@ from app.core.supabase import get_service_client
 from app.core.vault import read_secret
 from app.models.generation import (
     GenerateRequest,
+    GenerationDetailResponse,
+    GenerationHistoryItem,
+    GenerationHistoryPage,
+    GenerationHistoryStatusEnum,
     GenerationResponse,
     GenerationStatusEnum,
     LogoModeEnum,
+    PlatformPresetEnum,
     ProviderEnum,
 )
 from app.services.error_mapping import classify_provider_error
@@ -121,22 +130,21 @@ def _mark_failed(generation_id: UUID, code: str, message: str) -> None:
     ).eq("id", str(generation_id)).execute()
 
 
+def _derive_download_filename(image_url: str | None, row: dict, brand_name: str) -> str | None:
+    if not image_url or not row.get("completed_at"):
+        return None
+    completed_at = row["completed_at"]
+    if isinstance(completed_at, str):
+        completed_at = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
+    return build_download_filename(
+        brand_name=brand_name,
+        preset_identifier=row["platform_preset"],
+        completed_at=completed_at,
+    )
+
+
 def _build_response(row: dict, brand_name: str) -> GenerationResponse:
-    image_url = None
-    download_filename = None
-    if row.get("image_path") and row.get("completed_at"):
-        image_url = (
-            f"{settings.SUPABASE_URL}/storage/v1/object/public/"
-            f"{settings.STORAGE_BUCKET}/{row['image_path']}"
-        )
-        completed_at = row["completed_at"]
-        if isinstance(completed_at, str):
-            completed_at = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
-        download_filename = build_download_filename(
-            brand_name=brand_name,
-            preset_identifier=row["platform_preset"],
-            completed_at=completed_at,
-        )
+    image_url = _build_public_image_url(row.get("image_path"))
     return GenerationResponse(
         id=row["id"],
         prompt=row["prompt"],
@@ -148,7 +156,109 @@ def _build_response(row: dict, brand_name: str) -> GenerationResponse:
         logo_mode=row["logo_mode"],
         status=row["status"],
         image_url=image_url,
-        download_filename=download_filename,
+        download_filename=_derive_download_filename(image_url, row, brand_name),
+        error_code=row.get("error_code"),
+        error_message=row.get("error_message"),
+        created_at=row["created_at"],
+        completed_at=row.get("completed_at"),
+    )
+
+
+HISTORY_PAGE_SIZE = 24
+
+PROMPT_EXCERPT_LENGTH = 120
+
+
+def _build_public_image_url(image_path: str | None) -> str | None:
+    if not image_path:
+        return None
+    return (
+        f"{settings.SUPABASE_URL}/storage/v1/object/public/"
+        f"{settings.STORAGE_BUCKET}/{image_path}"
+    )
+
+
+def _build_prompt_excerpt(prompt: str) -> str:
+    if len(prompt) <= PROMPT_EXCERPT_LENGTH:
+        return prompt
+    return prompt[: PROMPT_EXCERPT_LENGTH - 1].rstrip() + "…"
+
+
+def _encode_cursor(created_at: str, row_id: str) -> str:
+    payload = json.dumps({"c": created_at, "i": row_id}, separators=(",", ":"))
+    return base64.urlsafe_b64encode(payload.encode()).decode()
+
+
+def _decode_cursor(cursor: str) -> tuple[str, str]:
+    try:
+        raw = base64.urlsafe_b64decode(cursor.encode()).decode()
+    except (BinasciiError, UnicodeDecodeError):
+        raise _error_response(400, "VALIDATION_ERROR", "Invalid cursor")
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        raise _error_response(400, "VALIDATION_ERROR", "Invalid cursor")
+    if not isinstance(payload, dict) or "c" not in payload or "i" not in payload:
+        raise _error_response(400, "VALIDATION_ERROR", "Invalid cursor")
+    created_at = payload["c"]
+    row_id = payload["i"]
+    if not isinstance(created_at, str) or not isinstance(row_id, str):
+        raise _error_response(400, "VALIDATION_ERROR", "Invalid cursor")
+    try:
+        parsed_created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        parsed_id = UUID(row_id)
+    except ValueError:
+        raise _error_response(400, "VALIDATION_ERROR", "Invalid cursor")
+    return parsed_created_at.isoformat(), str(parsed_id)
+
+
+def _is_already_missing_storage_error(exc: Exception) -> bool:
+    status_code = str(getattr(exc, "status", ""))
+    error_code = str(getattr(exc, "code", "")).lower()
+    message = str(getattr(exc, "message", str(exc))).lower()
+    return (
+        status_code == "404"
+        or error_code in {"not_found", "notfound", "object_not_found", "objectnotfound"}
+        or "not found" in message
+        or "does not exist" in message
+    )
+
+
+def _build_history_item(row: dict) -> GenerationHistoryItem:
+    image_url = _build_public_image_url(row.get("image_path"))
+    error_message = row.get("error_message") if row.get("status") == "failed" else None
+    return GenerationHistoryItem(
+        id=row["id"],
+        prompt_excerpt=_build_prompt_excerpt(row["prompt"]),
+        provider=row["provider"],
+        model=row["model"],
+        platform_preset=row["platform_preset"],
+        width=row["width"],
+        height=row["height"],
+        logo_mode=row["logo_mode"],
+        status=row["status"],
+        image_url=image_url,
+        error_message=error_message,
+        created_at=row["created_at"],
+        completed_at=row.get("completed_at"),
+    )
+
+
+def _build_detail_response(row: dict, brand_name: str) -> GenerationDetailResponse:
+    image_url = _build_public_image_url(row.get("image_path"))
+    return GenerationDetailResponse(
+        id=row["id"],
+        prompt=row["prompt"],
+        provider=row["provider"],
+        model=row["model"],
+        platform_preset=row["platform_preset"],
+        width=row["width"],
+        height=row["height"],
+        logo_mode=row["logo_mode"],
+        status=row["status"],
+        provider_request_id=row.get("provider_request_id"),
+        image_url=image_url,
+        download_filename=_derive_download_filename(image_url, row, brand_name),
         error_code=row.get("error_code"),
         error_message=row.get("error_message"),
         created_at=row["created_at"],
@@ -366,3 +476,160 @@ async def generate_image(
             "INTERNAL_ERROR",
             "Something went wrong. Please try again.",
         )
+
+
+_VALID_HISTORY_STATUSES = {"succeeded", "failed"}
+_VALID_HISTORY_PROVIDERS = {"openai", "gemini"}
+
+
+@router.get("/generations", response_model=GenerationHistoryPage)
+async def list_generation_history(
+    brand_id: UUID,
+    current_user: User = Depends(get_current_user),
+    provider: str | None = Query(None),
+    status: str | None = Query(None),
+    cursor: str | None = Query(None),
+) -> GenerationHistoryPage:
+    brand = _get_brand_or_404(brand_id, current_user.id)
+
+    if provider is not None and provider not in _VALID_HISTORY_PROVIDERS:
+        raise _error_response(400, "VALIDATION_ERROR", f"Invalid provider filter: {provider}")
+    if status is not None and status not in _VALID_HISTORY_STATUSES:
+        raise _error_response(400, "VALIDATION_ERROR", f"Invalid status filter: {status}")
+
+    client = get_service_client()
+    query = (
+        client.table("generations")
+        .select("*")
+        .eq("brand_id", str(brand_id))
+        .in_("status", ["succeeded", "failed"])
+    )
+
+    if provider:
+        query = query.eq("provider", provider)
+    if status:
+        query = query.eq("status", status)
+
+    if cursor:
+        cursor_created_at, cursor_id = _decode_cursor(cursor)
+        query = query.or_(
+            f"created_at.lt.{cursor_created_at},"
+            f"and(created_at.eq.{cursor_created_at},id.lt.{cursor_id})"
+        )
+
+    query = query.order("created_at", desc=True).order("id", desc=True).limit(HISTORY_PAGE_SIZE + 1)
+
+    result = query.execute()
+    rows = result.data or []
+
+    has_next = len(rows) > HISTORY_PAGE_SIZE
+    if has_next:
+        rows = rows[:HISTORY_PAGE_SIZE]
+
+    items = [_build_history_item(row) for row in rows]
+
+    next_cursor = None
+    if has_next and rows:
+        last = rows[-1]
+        next_cursor = _encode_cursor(last["created_at"], last["id"])
+
+    logger.info(
+        "history list brand_id=%s provider=%s status=%s cursor=%s returned=%d has_next=%s",
+        brand_id, provider, status, bool(cursor), len(items), has_next,
+    )
+
+    return GenerationHistoryPage(
+        items=items,
+        next_cursor=next_cursor,
+        page_size=HISTORY_PAGE_SIZE,
+    )
+
+
+@router.get("/generations/{generation_id}", response_model=GenerationDetailResponse)
+async def get_generation_detail(
+    brand_id: UUID,
+    generation_id: UUID,
+    current_user: User = Depends(get_current_user),
+) -> GenerationDetailResponse:
+    brand = _get_brand_or_404(brand_id, current_user.id)
+
+    client = get_service_client()
+    row = _find_generation_or_404(client, brand_id, generation_id)
+
+    # History exposes only terminal generations. A non-terminal row (pending/
+    # processing — e.g. an in-flight run or one left stuck by a crash) would fail
+    # GenerationDetailResponse's status enum, so treat it as not-found here.
+    if row["status"] not in ("succeeded", "failed"):
+        raise _error_response(404, "GENERATION_NOT_FOUND", "Generation not found")
+
+    logger.info(
+        "history detail brand_id=%s generation_id=%s status=%s",
+        brand_id, generation_id, row.get("status"),
+    )
+    return _build_detail_response(row, brand["name"])
+
+
+def _find_generation_or_404(client, brand_id: UUID, generation_id: UUID) -> dict:
+    result = (
+        client.table("generations")
+        .select("*")
+        .eq("id", str(generation_id))
+        .eq("brand_id", str(brand_id))
+        .maybe_single()
+        .execute()
+    )
+    if result is None or result.data is None:
+        raise _error_response(404, "GENERATION_NOT_FOUND", "Generation not found")
+    return result.data
+
+
+@router.delete("/generations/{generation_id}", status_code=204)
+async def delete_generation(
+    brand_id: UUID,
+    generation_id: UUID,
+    current_user: User = Depends(get_current_user),
+) -> None:
+    _get_brand_or_404(brand_id, current_user.id)
+
+    client = get_service_client()
+    row = _find_generation_or_404(client, brand_id, generation_id)
+
+    image_path = row.get("image_path")
+    if image_path:
+        try:
+            client.storage.from_(settings.STORAGE_BUCKET).remove([image_path])
+        except StorageException as exc:
+            if _is_already_missing_storage_error(exc):
+                pass
+            else:
+                logger.warning(
+                    "storage delete failed brand_id=%s generation_id=%s path=%s error=%s",
+                    brand_id, generation_id, image_path, exc,
+                )
+                raise _error_response(
+                    502, "STORAGE_DELETE_FAILED",
+                    "Failed to delete stored image. Please try again.",
+                )
+
+    # Storage is removed first (above) so a "deleted" image is never left publicly
+    # reachable. If the DB delete fails after that, surface a clean retryable error:
+    # the row briefly points at a now-missing object, and a retry heals it (the
+    # storage remove tolerates an already-missing object via _is_already_missing_storage_error).
+    try:
+        client.table("generations").delete().eq("id", str(generation_id)).eq(
+            "brand_id", str(brand_id)
+        ).execute()
+    except Exception as exc:
+        logger.error(
+            "db delete failed after storage removal brand_id=%s generation_id=%s path=%s error=%s",
+            brand_id, generation_id, image_path, exc,
+        )
+        raise _error_response(
+            502, "DELETE_FAILED",
+            "Failed to delete the generation. Please try again.",
+        )
+
+    logger.info(
+        "generation deleted brand_id=%s generation_id=%s",
+        brand_id, generation_id,
+    )

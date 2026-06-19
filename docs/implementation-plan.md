@@ -405,7 +405,7 @@ CREATE POLICY generations_owner_all ON generations FOR ALL
   WITH CHECK (is_brand_owner(brand_id));
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` bypasses RLS and is backend-only.
+`SUPABASE_SECRET_KEY` bypasses RLS and is backend-only.
 
 ### Storage
 
@@ -1495,7 +1495,7 @@ frontend/
 ```bash
 # Supabase (public)
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 
 # Browser -> Next.js (same-origin API route/rewrite)
 NEXT_PUBLIC_API_URL=/api
@@ -1509,8 +1509,7 @@ NEXT_SERVER_API_URL=http://127.0.0.1:8000
 ```bash
 # Supabase
 SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SECRET_KEY=sb_secret_...
 
 # Storage
 STORAGE_BUCKET=brand-assets
@@ -1525,8 +1524,8 @@ PORT=8000
 
 ### Production Notes
 
-- `SUPABASE_SERVICE_ROLE_KEY` must only be used server-side
-- Never expose service role key to frontend
+- `SUPABASE_SECRET_KEY` must only be used server-side
+- Never expose the secret key to frontend
 - `ADMIN_EMAILS` controls operator access
 
 ---
