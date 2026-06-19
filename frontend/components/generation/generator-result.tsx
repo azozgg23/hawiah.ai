@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { GenerationResponse } from '@/types'
 import { ErrorMessage } from '@/components/generation/error-message'
 import { downloadImageFile } from '@/lib/download'
@@ -17,6 +17,12 @@ interface GeneratorResultProps {
 export function GeneratorResult({ state, brandId }: GeneratorResultProps) {
   const [downloading, setDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+
+  // Clear any stale download error when a new result is shown.
+  const resultId = state.status === 'success' ? state.result.id : null
+  useEffect(() => {
+    setDownloadError(null)
+  }, [resultId])
 
   async function handleDownload(result: GenerationResponse) {
     if (!result.image_url || !result.download_filename) return

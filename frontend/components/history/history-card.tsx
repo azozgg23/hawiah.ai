@@ -27,12 +27,17 @@ export function HistoryCard({ item, brandId, search, onDelete }: HistoryCardProp
   async function handleConfirmDelete() {
     setDeleting(true)
     setDeleteError(null)
-    const outcome = await onDelete(item.id)
-    setDeleting(false)
-    if (!outcome.ok) {
-      setDeleteError(outcome.message ?? 'Failed to delete. Please try again.')
-    } else {
-      setDialogOpen(false)
+    try {
+      const outcome = await onDelete(item.id)
+      if (!outcome.ok) {
+        setDeleteError(outcome.message ?? 'Failed to delete. Please try again.')
+      } else {
+        setDialogOpen(false)
+      }
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete. Please try again.')
+    } finally {
+      setDeleting(false)
     }
   }
 

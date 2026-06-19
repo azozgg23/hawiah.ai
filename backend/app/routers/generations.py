@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from storage3.exceptions import StorageException
 
 from app.config import settings
@@ -20,9 +20,7 @@ from app.models.generation import (
     GenerationHistoryPage,
     GenerationHistoryStatusEnum,
     GenerationResponse,
-    GenerationStatusEnum,
     LogoModeEnum,
-    PlatformPresetEnum,
     ProviderEnum,
 )
 from app.services.error_mapping import classify_provider_error
@@ -478,8 +476,8 @@ async def generate_image(
         )
 
 
-_VALID_HISTORY_STATUSES = {"succeeded", "failed"}
-_VALID_HISTORY_PROVIDERS = {"openai", "gemini"}
+_VALID_HISTORY_STATUSES = {s.value for s in GenerationHistoryStatusEnum}
+_VALID_HISTORY_PROVIDERS = {p.value for p in ProviderEnum}
 
 
 @router.get("/generations", response_model=GenerationHistoryPage)
@@ -490,7 +488,7 @@ async def list_generation_history(
     status: str | None = Query(None),
     cursor: str | None = Query(None),
 ) -> GenerationHistoryPage:
-    brand = _get_brand_or_404(brand_id, current_user.id)
+    _get_brand_or_404(brand_id, current_user.id)
 
     if provider is not None and provider not in _VALID_HISTORY_PROVIDERS:
         raise _error_response(400, "VALIDATION_ERROR", f"Invalid provider filter: {provider}")

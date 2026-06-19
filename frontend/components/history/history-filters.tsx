@@ -15,7 +15,11 @@ export function HistoryFilters({
 }: HistoryFiltersProps) {
   return (
     <div className="flex flex-wrap gap-3">
+      <label htmlFor="history-provider" className="sr-only">
+        Filter by provider
+      </label>
       <select
+        id="history-provider"
         value={provider ?? ''}
         onChange={(e) => onProviderChange(e.target.value || undefined)}
         className="rounded-md border bg-background px-3 py-1.5 text-sm"
@@ -24,7 +28,11 @@ export function HistoryFilters({
         <option value="openai">OpenAI</option>
         <option value="gemini">Gemini</option>
       </select>
+      <label htmlFor="history-status" className="sr-only">
+        Filter by status
+      </label>
       <select
+        id="history-status"
         value={status ?? ''}
         onChange={(e) => onStatusChange(e.target.value || undefined)}
         className="rounded-md border bg-background px-3 py-1.5 text-sm"

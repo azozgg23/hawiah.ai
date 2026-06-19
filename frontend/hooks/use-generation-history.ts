@@ -68,9 +68,10 @@ export function useGenerationHistory(
         setError(err instanceof Error ? err.message : 'Failed to load history')
         return false
       } finally {
-        if (fetchIdRef.current !== fetchId) return
-        setLoading(false)
-        setLoadingMore(false)
+        if (fetchIdRef.current === fetchId) {
+          setLoading(false)
+          setLoadingMore(false)
+        }
       }
     },
     [requestPage],
@@ -121,9 +122,10 @@ export function useGenerationHistory(
         if (fetchIdRef.current !== fetchId) return
         setError(err instanceof Error ? err.message : 'Failed to load history')
       } finally {
-        if (fetchIdRef.current !== fetchId) return
-        setLoading(false)
-        setLoadingMore(false)
+        if (fetchIdRef.current === fetchId) {
+          setLoading(false)
+          setLoadingMore(false)
+        }
       }
     },
     [requestPage],
