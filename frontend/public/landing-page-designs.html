@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Basar AI Landing Page Concepts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=Manrope:wght@400;500;600;700;800&family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      color-scheme: dark;
+      --shell: #09090c;
+      --shell-border: rgba(255, 255, 255, 0.12);
+      --shell-text: rgba(255, 255, 255, 0.92);
+      --shell-muted: rgba(255, 255, 255, 0.62);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top, rgba(67, 97, 238, 0.16), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(6, 182, 212, 0.12), transparent 30%),
+        #07070a;
+      color: var(--shell-text);
+      font-family: "Manrope", sans-serif;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .page-shell {
+      width: min(1480px, calc(100vw - 32px));
+      margin: 24px auto;
+      border: 1px solid var(--shell-border);
+      border-radius: 28px;
+      overflow: hidden;
+      background: rgba(9, 9, 12, 0.86);
+      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--shell-border);
+      background: rgba(9, 9, 12, 0.92);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #fff, #8bf3ff 55%, #6f7dff);
+      color: #050507;
+      font-family: "Archivo Black", sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .brand-text strong {
+      display: block;
+      font-size: 0.98rem;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-text span {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--shell-muted);
+    }
+
+    .switcher {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .switcher button {
+      padding: 11px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(255, 255, 255, 0.82);
+      transition: 180ms ease;
+    }
+
+    .switcher button:hover,
+    .switcher button.is-active {
+      background: #f4f4f0;
+      border-color: #f4f4f0;
+      color: #07070a;
+      transform: translateY(-1px);
+    }
+
+    .concept {
+      display: none;
+      min-height: calc(100vh - 92px);
+    }
+
+    .concept.is-active {
+      display: block;
+    }
+
+    .concept-inner {
+      position: relative;
+      overflow: hidden;
+      min-height: calc(100vh - 92px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .button-primary,
+    .button-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px 22px;
+      border-radius: 999px;
+      transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+    }
+
+    .button-primary:hover,
+    .button-secondary:hover {
+      transform: translateY(-2px);
+    }
+
+    .stat-grid,
+    .feature-grid,
+    .mini-grid,
+    .signal-grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .section-label {
+      font-size: 0.78rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    .muted {
+      color: rgba(255, 255, 255, 0.68);
+    }
+
+    .design-one {
+      background:
+        radial-gradient(circle at 10% 10%, rgba(221, 196, 136, 0.18), transparent 28%),
+        radial-gradient(circle at 85% 15%, rgba(97, 120, 255, 0.16), transparent 30%),
+        linear-gradient(180deg, #0a0b12 0%, #111219 46%, #08090d 100%);
+      color: #f2eadf;
+      padding: 68px;
+      font-family: "Manrope", sans-serif;
+    }
+
+    .design-one .eyebrow {
+      border: 1px solid rgba(242, 234, 223, 0.18);
+      background: rgba(242, 234, 223, 0.06);
+      color: #e7d4b4;
+    }
+
+    .design-one .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.04fr) minmax(360px, 0.96fr);
+      gap: 42px;
+      align-items: center;
+    }
+
+    .design-one h1 {
+      margin: 18px 0 18px;
+      max-width: 9ch;
+      font-family: "Fraunces", serif;
+      font-size: clamp(3.6rem, 7vw, 7rem);
+      line-height: 0.92;
+      font-weight: 400;
+      letter-spacing: -0.05em;
+    }
+
+    .design-one .lead {
+      max-width: 620px;
+      font-size: 1.14rem;
+      line-height: 1.75;
+      color: rgba(242, 234, 223, 0.74);
+    }
+
+    .design-one .button-primary {
+      background: #f1e5d2;
+      color: #0c0d11;
+    }
+
+    .design-one .button-secondary {
+      border: 1px solid rgba(241, 229, 210, 0.2);
+      background: rgba(241, 229, 210, 0.05);
+      color: #f1e5d2;
+    }
+
+    .design-one .hero-card {
+      position: relative;
+      padding: 28px;
+      border: 1px solid rgba(241, 229, 210, 0.12);
+      border-radius: 30px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 20px 40px rgba(0, 0, 0, 0.22);
+    }
+
+    .design-one .hero-card::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: 22px;
+      border: 1px solid rgba(241, 229, 210, 0.08);
+      pointer-events: none;
+    }
+
+    .design-one .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      color: rgba(241, 229, 210, 0.8);
+      font-size: 0.88rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .design-one .preview-image {
+      min-height: 410px;
+      padding: 24px;
+      border-radius: 22px;
+      background:
+        linear-gradient(135deg, rgba(255, 220, 162, 0.16), rgba(255, 255, 255, 0.02)),
+        radial-gradient(circle at 70% 20%, rgba(110, 127, 255, 0.4), transparent 35%),
+        radial-gradient(circle at 25% 70%, rgba(255, 179, 87, 0.32), transparent 30%),
+        #191a21;
+      display: grid;
+      align-content: space-between;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .design-one .preview-copy {
+      font-family: "Fraunces", serif;
+      font-size: clamp(2rem, 3vw, 3rem);
+      line-height: 1;
+      max-width: 7ch;
+    }
+
+    .design-one .preview-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: rgba(241, 229, 210, 0.74);
+      font-size: 0.92rem;
+    }
+
+    .design-one .stat-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 42px;
+    }
+
+    .design-one .stat {
+      padding: 22px 20px;
+      border-top: 1px solid rgba(241, 229, 210, 0.12);
+    }
+
+    .design-one .stat strong {
+      display: block;
+      font-family: "Fraunces", serif;
+      font-size: 2.2rem;
+      font-weight: 400;
+      margin-bottom: 10px;
+    }
+
+    .design-one .feature-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 60px;
+    }
+
+    .design-one .feature {
+      padding: 26px;
+      border-radius: 24px;
+      border: 1px solid rgba(241, 229, 210, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .design-one .feature h3 {
+      margin: 16px 0 10px;
+      font-family: "Fraunces", serif;
+      font-weight: 400;
+      font-size: 1.6rem;
+    }
+
+    .design-one .feature-index {
+      font-size: 0.9rem;
+      letter-spacing: 0.14em;
+      color: #e2c79c;
+      text-transform: uppercase;
+    }
+
+    .design-two {
+      padding: 0;
+      background: #f3f04a;
+      color: #060606;
+      font-family: "Archivo Black", sans-serif;
+    }
+
+    .design-two .grid {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.1fr);
+      min-height: calc(100vh - 92px);
+    }
+
+    .design-two .left,
+    .design-two .right {
+      padding: 56px;
+    }
+
+    .design-two .left {
+      background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent),
+        repeating-linear-gradient(
+          -45deg,
+          rgba(0, 0, 0, 0.06) 0,
+          rgba(0, 0, 0, 0.06) 14px,
+          transparent 14px,
+          transparent 28px
+        );
+      border-right: 4px solid #060606;
+    }
+
+    .design-two .eyebrow {
+      background: #060606;
+      color: #f3f04a;
+      border: 3px solid #060606;
+      border-radius: 0;
+      box-shadow: 8px 8px 0 #ff4a36;
+    }
+
+    .design-two h1 {
+      margin: 30px 0 24px;
+      font-size: clamp(3.7rem, 9vw, 7.2rem);
+      line-height: 0.88;
+      letter-spacing: -0.06em;
+      text-transform: uppercase;
+      max-width: 6ch;
+    }
+
+    .design-two p,
+    .design-two li,
+    .design-two .meta {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.98rem;
+      line-height: 1.8;
+      letter-spacing: 0.01em;
+    }
+
+    .design-two .button-primary,
+    .design-two .button-secondary {
+      border-radius: 0;
+      border: 3px solid #060606;
+      box-shadow: 10px 10px 0 #060606;
+    }
+
+    .design-two .button-primary {
+      background: #ff4a36;
+      color: #060606;
+    }
+
+    .design-two .button-secondary {
+      background: transparent;
+      color: #060606;
+    }
+
+    .design-two .ticket {
+      margin-top: 28px;
+      padding: 24px;
+      border: 3px solid #060606;
+      background: #fffdf2;
+      box-shadow: 14px 14px 0 #060606;
+    }
+
+    .design-two .ticket strong {
+      display: block;
+      font-size: 2rem;
+      margin-bottom: 14px;
+    }
+
+    .design-two .ticker {
+      display: flex;
+      overflow: hidden;
+      border-top: 4px solid #060606;
+      border-bottom: 4px solid #060606;
+      background: #060606;
+      color: #f3f04a;
+      white-space: nowrap;
+    }
+
+    .design-two .ticker-track {
+      padding: 18px 0;
+      display: inline-flex;
+      gap: 42px;
+      animation: moveTicker 22s linear infinite;
+      min-width: 100%;
+      justify-content: space-around;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.95rem;
+    }
+
+    @keyframes moveTicker {
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
+    }
+
+    .design-two .right {
+      display: grid;
+      gap: 20px;
+      background: #f8f6e7;
+    }
+
+    .design-two .stack-card {
+      border: 3px solid #060606;
+      padding: 24px;
+      background: white;
+      box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.08);
+    }
+
+    .design-two .stack-card strong {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 1.5rem;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+    }
+
+    .design-two .feature-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .design-three {
+      padding: 40px;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(15, 224, 255, 0.12), transparent 20%),
+        radial-gradient(circle at 80% 14%, rgba(95, 76, 255, 0.18), transparent 20%),
+        linear-gradient(180deg, #050815 0%, #08101d 45%, #050815 100%);
+      color: #dffcff;
+      font-family: "Sora", sans-serif;
+    }
+
+    .design-three .frame {
+      border: 1px solid rgba(116, 233, 255, 0.18);
+      border-radius: 32px;
+      background: linear-gradient(180deg, rgba(5, 12, 21, 0.8), rgba(5, 12, 21, 0.52));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 28px 60px rgba(0, 0, 0, 0.34);
+      overflow: hidden;
+    }
+
+    .design-three .frame-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 24px;
+      border-bottom: 1px solid rgba(116, 233, 255, 0.14);
+      background: rgba(4, 10, 18, 0.8);
+    }
+
+    .design-three .signal-dots {
+      display: flex;
+      gap: 10px;
+    }
+
+    .design-three .signal-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #74e9ff;
+      box-shadow: 0 0 14px rgba(116, 233, 255, 0.85);
+    }
+
+    .design-three .hud {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
+      gap: 24px;
+      padding: 26px;
+    }
+
+    .design-three .eyebrow {
+      border: 1px solid rgba(116, 233, 255, 0.26);
+      background: rgba(116, 233, 255, 0.08);
+      color: #74e9ff;
+    }
+
+    .design-three h1 {
+      margin: 18px 0 18px;
+      max-width: 10ch;
+      font-size: clamp(3.2rem, 6vw, 5.8rem);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+    }
+
+    .design-three .lead {
+      max-width: 58ch;
+      color: rgba(223, 252, 255, 0.75);
+      line-height: 1.8;
+    }
+
+    .design-three .button-primary {
+      background: linear-gradient(135deg, #74e9ff, #8d82ff);
+      color: #07101e;
+      box-shadow: 0 0 30px rgba(116, 233, 255, 0.2);
+    }
+
+    .design-three .button-secondary {
+      border: 1px solid rgba(116, 233, 255, 0.2);
+      background: rgba(116, 233, 255, 0.05);
+      color: #dffcff;
+    }
+
+    .design-three .signal-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 30px;
+    }
+
+    .design-three .signal-card,
+    .design-three .panel,
+    .design-three .log {
+      border: 1px solid rgba(116, 233, 255, 0.16);
+      border-radius: 24px;
+      background: rgba(8, 18, 31, 0.78);
+    }
+
+    .design-three .signal-card {
+      padding: 20px;
+    }
+
+    .design-three .signal-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.9rem;
+      font-weight: 700;
+    }
+
+    .design-three .right-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .design-three .panel {
+      padding: 22px;
+    }
+
+    .design-three .panel h3,
+    .design-three .log h3 {
+      margin: 0 0 14px;
+      font-size: 1rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #74e9ff;
+    }
+
+    .design-three .flow {
+      display: grid;
+      gap: 12px;
+    }
+
+    .design-three .flow-step {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(116, 233, 255, 0.05);
+      color: rgba(223, 252, 255, 0.8);
+      font-size: 0.93rem;
+    }
+
+    .design-three .badge {
+      color: #74e9ff;
+    }
+
+    .design-three .log {
+      padding: 22px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.86rem;
+      line-height: 1.9;
+      color: rgba(223, 252, 255, 0.7);
+    }
+
+    .design-four {
+      padding: 56px;
+      background:
+        radial-gradient(circle at top left, rgba(255, 157, 209, 0.24), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(95, 207, 255, 0.18), transparent 24%),
+        #fff8f2;
+      color: #171014;
+      font-family: "Plus Jakarta Sans", sans-serif;
+    }
+
+    .design-four .eyebrow {
+      background: rgba(23, 16, 20, 0.08);
+      color: #7f4764;
+      border: 1px solid rgba(23, 16, 20, 0.12);
+    }
+
+    .design-four .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.98fr) minmax(420px, 1.02fr);
+      gap: 36px;
+      align-items: center;
+    }
+
+    .design-four h1 {
+      margin: 16px 0 18px;
+      font-family: "DM Serif Display", serif;
+      font-size: clamp(3.5rem, 7vw, 6.6rem);
+      line-height: 0.94;
+      letter-spacing: -0.04em;
+      max-width: 8ch;
+    }
+
+    .design-four .lead {
+      max-width: 56ch;
+      line-height: 1.85;
+      color: rgba(23, 16, 20, 0.72);
+      font-size: 1.06rem;
+    }
+
+    .design-four .button-primary {
+      background: #171014;
+      color: #fff8f2;
+    }
+
+    .design-four .button-secondary {
+      border: 1px solid rgba(23, 16, 20, 0.16);
+      background: rgba(255, 255, 255, 0.55);
+      color: #171014;
+    }
+
+    .design-four .canvas {
+      position: relative;
+      min-height: 520px;
+    }
+
+    .design-four .floating,
+    .design-four .poster,
+    .design-four .note {
+      position: absolute;
+      border-radius: 28px;
+      box-shadow: 0 20px 50px rgba(84, 42, 63, 0.14);
+    }
+
+    .design-four .poster {
+      inset: 36px 48px 48px 34px;
+      padding: 26px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.18)),
+        linear-gradient(135deg, #ff8bc7, #ffd76d 52%, #71d3ff);
+      transform: rotate(-4deg);
+    }
+
+    .design-four .poster-copy {
+      display: grid;
+      height: 100%;
+      padding: 18px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(14px);
+    }
+
+    .design-four .poster-copy strong {
+      align-self: end;
+      font-family: "DM Serif Display", serif;
+      font-size: clamp(2.8rem, 4vw, 4rem);
+      line-height: 0.95;
+      max-width: 6ch;
+    }
+
+    .design-four .floating {
+      width: 210px;
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid rgba(23, 16, 20, 0.08);
+    }
+
+    .design-four .floating.top {
+      top: 0;
+      right: 10px;
+      transform: rotate(8deg);
+    }
+
+    .design-four .floating.bottom {
+      left: 0;
+      bottom: 0;
+      transform: rotate(-8deg);
+    }
+
+    .design-four .note {
+      right: 36px;
+      bottom: 24px;
+      width: 180px;
+      padding: 18px;
+      border-radius: 22px;
+      background: #171014;
+      color: #fff8f2;
+      transform: rotate(4deg);
+    }
+
+    .design-four .mini-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 48px;
+    }
+
+    .design-four .mini {
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid rgba(23, 16, 20, 0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    .design-four .mini strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.2rem;
+    }
+
+    .design-five {
+      padding: 72px 68px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 243, 236, 0.96)),
+        #faf8f1;
+      color: #181715;
+      font-family: "Manrope", sans-serif;
+    }
+
+    .design-five .eyebrow {
+      border: 1px solid rgba(24, 23, 21, 0.12);
+      background: rgba(24, 23, 21, 0.03);
+      color: #705842;
+    }
+
+    .design-five .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+      gap: 42px;
+      align-items: start;
+      padding-bottom: 56px;
+      border-bottom: 1px solid rgba(24, 23, 21, 0.1);
+    }
+
+    .design-five h1 {
+      margin: 18px 0;
+      max-width: 10ch;
+      font-size: clamp(3.4rem, 7vw, 6rem);
+      line-height: 0.94;
+      letter-spacing: -0.06em;
+    }
+
+    .design-five .lead {
+      max-width: 58ch;
+      font-size: 1.06rem;
+      line-height: 1.95;
+      color: rgba(24, 23, 21, 0.68);
+    }
+
+    .design-five .button-primary {
+      background: #181715;
+      color: #f7f3ec;
+    }
+
+    .design-five .button-secondary {
+      border: 1px solid rgba(24, 23, 21, 0.14);
+      background: transparent;
+      color: #181715;
+    }
+
+    .design-five .summary-card {
+      padding: 24px;
+      border: 1px solid rgba(24, 23, 21, 0.12);
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(10px);
+    }
+
+    .design-five .summary-card strong {
+      display: block;
+      font-size: 0.82rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(24, 23, 21, 0.6);
+      margin-bottom: 16px;
+    }
+
+    .design-five .summary-card p {
+      margin: 0 0 18px;
+      line-height: 1.8;
+      color: rgba(24, 23, 21, 0.72);
+    }
+
+    .design-five .rail {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 20px;
+      padding: 34px 0 12px;
+      border-bottom: 1px solid rgba(24, 23, 21, 0.1);
+    }
+
+    .design-five .rail-item strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.92rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(24, 23, 21, 0.56);
+    }
+
+    .design-five .rail-item span {
+      font-size: 1.12rem;
+      line-height: 1.6;
+      display: block;
+    }
+
+    .design-five .narrative {
+      display: grid;
+      grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+      gap: 30px;
+      padding-top: 42px;
+    }
+
+    .design-five .narrative h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(24, 23, 21, 0.5);
+    }
+
+    .design-five .timeline {
+      display: grid;
+      gap: 20px;
+    }
+
+    .design-five .timeline-item {
+      padding: 24px 0;
+      border-top: 1px solid rgba(24, 23, 21, 0.1);
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 24px;
+    }
+
+    .design-five .timeline-item strong {
+      font-size: 0.86rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(24, 23, 21, 0.48);
+    }
+
+    .design-five .timeline-item h3 {
+      margin: 0 0 10px;
+      font-size: 1.7rem;
+      letter-spacing: -0.03em;
+    }
+
+    .design-five .timeline-item p {
+      margin: 0;
+      color: rgba(24, 23, 21, 0.68);
+      line-height: 1.8;
+    }
+
+    @media (max-width: 1080px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .switcher {
+        justify-content: flex-start;
+      }
+
+      .design-one,
+      .design-two .left,
+      .design-two .right,
+      .design-three,
+      .design-four,
+      .design-five {
+        padding: 32px;
+      }
+
+      .design-one .hero,
+      .design-two .grid,
+      .design-three .hud,
+      .design-four .hero,
+      .design-five .hero,
+      .design-five .narrative {
+        grid-template-columns: 1fr;
+      }
+
+      .design-two .left {
+        border-right: 0;
+        border-bottom: 4px solid #060606;
+      }
+
+      .design-five .rail {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page-shell {
+        width: calc(100vw - 14px);
+        margin: 7px auto;
+        border-radius: 20px;
+      }
+
+      .topbar {
+        padding: 16px;
+      }
+
+      .switcher {
+        gap: 8px;
+      }
+
+      .switcher button {
+        padding: 9px 12px;
+        font-size: 0.88rem;
+      }
+
+      .design-one,
+      .design-three,
+      .design-four,
+      .design-five,
+      .design-two .left,
+      .design-two .right {
+        padding: 22px;
+      }
+
+      .design-one .stat-grid,
+      .design-one .feature-grid,
+      .design-two .feature-grid,
+      .design-three .signal-grid,
+      .design-four .mini-grid,
+      .design-five .rail {
+        grid-template-columns: 1fr;
+      }
+
+      .design-four .canvas {
+        min-height: 420px;
+      }
+
+      .design-four .poster {
+        inset: 36px 14px 50px 14px;
+      }
+
+      .design-four .floating.top {
+        right: 0;
+      }
+
+      .design-four .note {
+        right: 6px;
+        bottom: 8px;
+      }
+
+      .design-five .timeline-item {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <div class="brand-mark">BA</div>
+        <div class="brand-text">
+          <strong>Basar AI Landing Concepts</strong>
+          <span>Five distinct directions for a multi-brand social image generator</span>
+        </div>
+      </div>
+      <nav class="switcher" aria-label="Landing page concepts">
+        <button class="is-active" data-target="concept-1">01 Editorial</button>
+        <button data-target="concept-2">02 Brutalist</button>
+        <button data-target="concept-3">03 Control Room</button>
+        <button data-target="concept-4">04 Studio Collage</button>
+        <button data-target="concept-5">05 Narrative</button>
+      </nav>
+    </header>
+
+    <section class="concept is-active" id="concept-1">
+      <div class="concept-inner design-one">
+        <div class="hero">
+          <div>
+            <div class="eyebrow">Concept 01 / Editorial Luxury</div>
+            <h1>Your brand deserves more than generic AI output.</h1>
+            <p class="lead">
+              Basar AI turns every brand into a focused creative system. Build a brand profile,
+              store your own OpenAI or Gemini keys, and generate campaign-ready social visuals
+              with tone, color, logo behavior, and platform presets already aligned.
+            </p>
+            <div class="button-row">
+              <a class="button-primary" href="#">Start with your first brand</a>
+              <a class="button-secondary" href="#">See the generation workflow</a>
+            </div>
+            <div class="stat-grid">
+              <div class="stat">
+                <strong>13</strong>
+                <span class="muted">social platform presets from stories to thumbnails</span>
+              </div>
+              <div class="stat">
+                <strong>2</strong>
+                <span class="muted">provider paths with BYOK support for OpenAI and Gemini</span>
+              </div>
+              <div class="stat">
+                <strong>1</strong>
+                <span class="muted">workspace per brand so prompts, kits, keys, and history stay isolated</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-card">
+            <div class="card-top">
+              <span>Campaign Preview</span>
+              <span>Brand: Solaris Atelier</span>
+            </div>
+            <div class="preview-image">
+              <div class="preview-copy">A launch visual already shaped by your brand voice.</div>
+              <div class="preview-meta">
+                <span>Preset: Instagram Post</span>
+                <span>Logo mode: Watermark</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature">
+            <div class="feature-index">01 / Brand Kit</div>
+            <h3>Codify visual identity</h3>
+            <p class="muted">Capture tone, audience, colors, tagline, and guardrails once, then let every generation inherit that context.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-index">02 / Key Vault</div>
+            <h3>Bring your own model access</h3>
+            <p class="muted">Store provider keys securely and rotate active credentials without breaking the production workflow.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-index">03 / Social Output</div>
+            <h3>Generate for the channel</h3>
+            <p class="muted">Create assets sized for real placements like LinkedIn banners, Instagram stories, and YouTube thumbnails.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="concept" id="concept-2">
+      <div class="concept-inner design-two">
+        <div class="ticker" aria-hidden="true">
+          <div class="ticker-track">
+            <span>MAKE BETTER BRAND IMAGES</span>
+            <span>BYOK OPENAI + GEMINI</span>
+            <span>MULTI BRAND WORKSPACES</span>
+            <span>GENERATION HISTORY BUILT IN</span>
+          </div>
+          <div class="ticker-track">
+            <span>MAKE BETTER BRAND IMAGES</span>
+            <span>BYOK OPENAI + GEMINI</span>
+            <span>MULTI BRAND WORKSPACES</span>
+            <span>GENERATION HISTORY BUILT IN</span>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="left">
+            <div class="eyebrow">Concept 02 / Brutalist SaaS</div>
+            <h1>Stop feeding random prompts into random tools.</h1>
+            <p>
+              BASAR AI GIVES EACH BRAND A NAME, A KIT, A KEYSET, AND A HISTORY. YOU DO THE
+              CREATIVE DIRECTION. THE SYSTEM HANDLES THE BORING PART: KEEPING OUTPUT CONSISTENT.
+            </p>
+            <div class="button-row">
+              <a class="button-primary" href="#">CREATE BRAND</a>
+              <a class="button-secondary" href="#">VIEW DEMO FLOW</a>
+            </div>
+            <div class="ticket">
+              <strong>HOW IT WORKS</strong>
+              <p>
+                01. CREATE A BRAND<br />
+                02. ANSWER THE BRAND KIT<br />
+                03. ADD OPENAI OR GEMINI KEY<br />
+                04. GENERATE SOCIAL IMAGE<br />
+                05. TRACK RESULTS IN HISTORY
+              </p>
+            </div>
+          </div>
+          <div class="right">
+            <article class="stack-card">
+              <strong>BUILT FOR MARKETERS WHO SHIP FAST</strong>
+              <p class="meta">
+                PRESET SIZES FOR INSTAGRAM, FACEBOOK, X, LINKEDIN, TIKTOK, AND YOUTUBE.
+                NO GUESSWORK. NO RESIZING CHAOS.
+              </p>
+            </article>
+            <div class="feature-grid">
+              <article class="stack-card">
+                <strong>OWN YOUR KEYS</strong>
+                <p class="meta">BYOK MEANS NO PLATFORM BILLING LAYER AND MORE DIRECT CONTROL OVER MODEL ACCESS.</p>
+              </article>
+              <article class="stack-card">
+                <strong>OWN YOUR HISTORY</strong>
+                <p class="meta">SUCCEEDED AND FAILED GENERATIONS ARE TRACKED SO YOU CAN SEE WHAT HAPPENED.</p>
+              </article>
+              <article class="stack-card">
+                <strong>OWN YOUR BRAND</strong>
+                <p class="meta">EVERY LOGO, KIT, KEY, AND IMAGE STAYS WITH ITS BRAND. CLEAN TENANCY. CLEAN MENTAL MODEL.</p>
+              </article>
+              <article class="stack-card">
+                <strong>OWN THE OUTPUT</strong>
+                <p class="meta">PNG ASSETS, PUBLIC STORAGE PATHS, AND A SIMPLE MVP READY FOR REAL CONTENT TEAMS.</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="concept" id="concept-3">
+      <div class="concept-inner design-three">
+        <div class="frame">
+          <div class="frame-top">
+            <div class="signal-dots"><span></span><span></span><span></span></div>
+            <div class="section-label">Concept 03 / Futuristic Control Room</div>
+          </div>
+          <div class="hud">
+            <div>
+              <div class="eyebrow">Brand systems for high-output image teams</div>
+              <h1>Run image generation like a calibrated creative pipeline.</h1>
+              <p class="lead">
+                Basar AI is not a one-off prompt box. It is a brand-aware command center where
+                each generation is shaped by brand kit context, validated provider access, logo
+                rules, and platform-specific dimensions before the asset is produced.
+              </p>
+              <div class="button-row">
+                <a class="button-primary" href="#">Enter workspace</a>
+                <a class="button-secondary" href="#">Inspect system map</a>
+              </div>
+              <div class="signal-grid">
+                <article class="signal-card">
+                  <strong>24/7</strong>
+                  <span class="muted">history visibility across succeeded and failed runs</span>
+                </article>
+                <article class="signal-card">
+                  <strong>BYOK</strong>
+                  <span class="muted">direct OpenAI and Gemini routing with secure vault storage</span>
+                </article>
+                <article class="signal-card">
+                  <strong>13 Presets</strong>
+                  <span class="muted">social-first formats already mapped to exact sizes</span>
+                </article>
+              </div>
+            </div>
+            <div class="right-stack">
+              <article class="panel">
+                <h3>Generation Flow</h3>
+                <div class="flow">
+                  <div class="flow-step"><span>Brand context resolved</span><span class="badge">ready</span></div>
+                  <div class="flow-step"><span>Provider key loaded from vault</span><span class="badge">ready</span></div>
+                  <div class="flow-step"><span>Preset dimensions applied</span><span class="badge">1080x1080</span></div>
+                  <div class="flow-step"><span>Prompt composed and dispatched</span><span class="badge">processing</span></div>
+                </div>
+              </article>
+              <article class="log">
+                <h3>System Trace</h3>
+                [brand: northstar-labs]<br />
+                kit.summary -> complete<br />
+                provider -> gemini<br />
+                logo_mode -> watermark<br />
+                platform_preset -> linkedin_post<br />
+                generation.status -> succeeded<br />
+                image_path -> brands/{brandId}/generations/{generationId}.png
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="concept" id="concept-4">
+      <div class="concept-inner design-four">
+        <div class="hero">
+          <div>
+            <div class="eyebrow">Concept 04 / Creative Studio Collage</div>
+            <h1>Give every brand its own visual playground.</h1>
+            <p class="lead">
+              For teams juggling multiple client identities, Basar AI keeps each brand sharp.
+              The system captures voice, color, audience, and logo behavior, then turns that
+              structure into a playful but reliable social image workflow.
+            </p>
+            <div class="button-row">
+              <a class="button-primary" href="#">Build a campaign space</a>
+              <a class="button-secondary" href="#">Open concept gallery</a>
+            </div>
+          </div>
+          <div class="canvas">
+            <div class="poster">
+              <div class="poster-copy">
+                <span class="section-label">Generated launch asset</span>
+                <strong>Dream bigger. Post sharper.</strong>
+              </div>
+            </div>
+            <div class="floating top">
+              <span class="section-label">Brand Kit</span>
+              <p>Audience: design-first founders<br />Tone: confident, warm<br />Colors: #FF6AA2 #F5C84C #6FD7FF</p>
+            </div>
+            <div class="floating bottom">
+              <span class="section-label">Provider Keys</span>
+              <p>OpenAI active<br />Gemini standby<br />Validation status visible</p>
+            </div>
+            <div class="note">
+              Logo modes:<br />none<br />prompt<br />watermark<br />both
+            </div>
+          </div>
+        </div>
+        <div class="mini-grid">
+          <article class="mini">
+            <strong>Brand-first setup</strong>
+            <p>Start with the identity before the prompt. That changes the quality of every asset that follows.</p>
+          </article>
+          <article class="mini">
+            <strong>Social-native output</strong>
+            <p>Every image is generated for a real placement, not a vague canvas that needs cleanup later.</p>
+          </article>
+          <article class="mini">
+            <strong>Clear production memory</strong>
+            <p>Generation history gives the team a visible record of what worked, what failed, and what shipped.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="concept" id="concept-5">
+      <div class="concept-inner design-five">
+        <div class="hero">
+          <div>
+            <div class="eyebrow">Concept 05 / Minimal Product Narrative</div>
+            <h1>The shortest path from brand context to social image.</h1>
+            <p class="lead">
+              Basar AI is a calm, structured workflow for image generation. No noisy creative suite.
+              No extra billing layer. No mystery around why one asset looks on-brand and the next one does not.
+              Just a clear chain from brand identity to platform-ready output.
+            </p>
+            <div class="button-row">
+              <a class="button-primary" href="#">Start free with your own keys</a>
+              <a class="button-secondary" href="#">Read the product flow</a>
+            </div>
+          </div>
+          <aside class="summary-card">
+            <strong>At a glance</strong>
+            <p>
+              Multi-brand workspace. Supabase auth and storage. FastAPI backend. Next.js frontend.
+              OpenAI and Gemini providers. Brand kit, generation history, and hard deletes included.
+            </p>
+            <p>
+              Designed for small teams and founders who want branded social image generation without a heavy platform footprint.
+            </p>
+          </aside>
+        </div>
+
+        <div class="rail">
+          <div class="rail-item">
+            <strong>Brand</strong>
+            <span>Create distinct workspaces for each client or product line.</span>
+          </div>
+          <div class="rail-item">
+            <strong>Kit</strong>
+            <span>Answer six lightweight questions to define voice and visual cues.</span>
+          </div>
+          <div class="rail-item">
+            <strong>Keys</strong>
+            <span>Bring your own OpenAI or Gemini keys and manage active rotation.</span>
+          </div>
+          <div class="rail-item">
+            <strong>History</strong>
+            <span>Review generated assets, failures, timestamps, and downloadable results.</span>
+          </div>
+        </div>
+
+        <div class="narrative">
+          <h2>Product Narrative</h2>
+          <div class="timeline">
+            <article class="timeline-item">
+              <strong>Step 01</strong>
+              <div>
+                <h3>Set the creative perimeter</h3>
+                <p>Every strong asset begins with boundaries. The brand kit gives the model a name, tone, audience, and words to avoid before prompting even begins.</p>
+              </div>
+            </article>
+            <article class="timeline-item">
+              <strong>Step 02</strong>
+              <div>
+                <h3>Connect the provider directly</h3>
+                <p>Basar AI follows a BYOK model, so the customer controls provider credentials and the system focuses on workflow orchestration rather than usage markup.</p>
+              </div>
+            </article>
+            <article class="timeline-item">
+              <strong>Step 03</strong>
+              <div>
+                <h3>Generate for where the image will live</h3>
+                <p>Platform presets convert a prompt into output for an actual channel, from LinkedIn banners to Instagram posts and YouTube thumbnails.</p>
+              </div>
+            </article>
+            <article class="timeline-item">
+              <strong>Step 04</strong>
+              <div>
+                <h3>Keep a clean record</h3>
+                <p>History is part of the product. Teams can inspect what was created, what failed, and which assets belong to each brand without losing operational clarity.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const buttons = Array.from(document.querySelectorAll(".switcher button"));
+    const concepts = Array.from(document.querySelectorAll(".concept"));
+
+    function activateConcept(id) {
+      buttons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.target === id);
+      });
+
+      concepts.forEach((concept) => {
+        concept.classList.toggle("is-active", concept.id === id);
+      });
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => activateConcept(button.dataset.target));
+    });
+  </script>
+</body>
+</html>
