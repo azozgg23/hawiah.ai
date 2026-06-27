@@ -1,4 +1,4 @@
-# Basar AI
+# Siyaq AI
 
 Multi-brand social image generator. Built with Next.js 14, FastAPI, and Supabase.
 
